@@ -9,6 +9,21 @@ async function proxy(request: Request, context: RouteContext) {
   const { path = [] } = await context.params;
   const target = `${backendApiUrl()}/${path.map(encodeURIComponent).join("/")}${new URL(request.url).search}`;
   const headers = new Headers(request.headers);
+
+  // The browser only ever talks to this proxy on our own domain, so a
+  // same-origin request is a server-to-server call from the backend's point of
+  // view: drop its Origin so backend CORS doesn't have to list this domain.
+  // Foreign origins are still forwarded and rejected by the backend.
+  const origin = headers.get("origin");
+  const ownHost = headers.get("x-forwarded-host") ?? headers.get("host");
+  if (origin && ownHost) {
+    try {
+      if (new URL(origin).host === ownHost) headers.delete("origin");
+    } catch {
+      // Malformed Origin: leave it for the backend to reject.
+    }
+  }
+
   headers.delete("host");
   headers.delete("content-length");
 
