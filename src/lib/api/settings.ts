@@ -9,8 +9,13 @@ export async function saveWhatsAppConfig(partial: Partial<WhatsAppApiConfig>): P
   // Access tokens and verify tokens are environment-managed on the backend
   // and never accepted from the client — only the non-secret fields below
   // are persisted. See server/src/controllers/settings.controller.js.
-  const { businessAccountId, phoneNumberId, webhookUrl } = partial;
-  return http.patch<WhatsAppApiConfig>("/settings/whatsapp", { businessAccountId, phoneNumberId, webhookUrl });
+  const { businessAccountId, phoneNumberId, webhookUrl, autoLeadCreationEnabled } = partial;
+  return http.patch<WhatsAppApiConfig>("/settings/whatsapp", {
+    businessAccountId,
+    phoneNumberId,
+    webhookUrl,
+    autoLeadCreationEnabled,
+  });
 }
 
 export async function testWhatsAppConnection(to?: string): Promise<{ success: boolean; message: string }> {

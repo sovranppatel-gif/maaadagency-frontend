@@ -80,7 +80,8 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
     if (newToken) return request<T>(path, options, true);
     clearAuth();
     if (typeof window !== "undefined" && !window.location.pathname.endsWith("/login")) {
-      window.location.href = "/master-admin/login";
+      const loginPath = window.location.pathname.startsWith("/employee") ? "/employee/login" : "/master-admin/login";
+      window.location.href = loginPath;
     }
   }
 

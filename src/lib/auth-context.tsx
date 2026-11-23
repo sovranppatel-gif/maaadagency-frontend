@@ -14,7 +14,7 @@ interface AuthContextValue {
   user: AdminUser | null;
   /** true while the initial session check (refresh + /me) is in flight. */
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AdminUser>;
   logout: () => Promise<void>;
 }
 
@@ -68,11 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<AdminUser> => {
     try {
       const res = await http.post<LoginResponse>("/auth/login", { email, password }, { skipAuthRetry: true });
       setAccessToken(res.accessToken);
       setUser(res.user);
+      return res.user;
     } catch (err) {
       if (err instanceof ApiError) throw err;
       throw new ApiError(0, "Could not reach the server. Is the backend running?");

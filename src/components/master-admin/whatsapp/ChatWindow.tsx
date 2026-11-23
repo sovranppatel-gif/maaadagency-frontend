@@ -95,7 +95,7 @@ export function ChatWindow({
         <a href={`tel:${conversation.phone.replace(/\s+/g, "")}`} className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100" aria-label="Call client">
           <Phone className="h-4 w-4" />
         </a>
-        <button type="button" onClick={onShowDetails} className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 lg:hidden" aria-label="Client details">
+        <button type="button" onClick={onShowDetails} className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 xl:hidden" aria-label="Client details">
           <Info className="h-4 w-4" />
         </button>
       </div>

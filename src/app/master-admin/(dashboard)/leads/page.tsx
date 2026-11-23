@@ -11,9 +11,11 @@ import { Card } from "@/components/master-admin/ui/Card";
 import { Pagination } from "@/components/master-admin/ui/Pagination";
 import { EmptyState } from "@/components/master-admin/ui/EmptyState";
 import { useToast } from "@/components/master-admin/ui/ToastProvider";
+import { LeadFormModal } from "@/components/master-admin/LeadFormModal";
 import { usePagination } from "@/lib/usePagination";
-import { getLeads, assignLead, deleteLead, type LeadFilters } from "@/lib/api/leads";
+import { getLeads, createLead, assignLead, deleteLead, type LeadFilters, type LeadInput } from "@/lib/api/leads";
 import { useDirectory } from "@/lib/directory";
+import { useAuth } from "@/lib/auth-context";
 import type { Lead, LeadStatus, Priority } from "@/lib/types";
 
 const statuses: (LeadStatus | "All")[] = ["All", "New", "Assigned", "In Progress", "Submitted", "Changes Requested", "Approved", "Completed"];
@@ -30,8 +32,11 @@ function LeadsPageInner() {
   const [employeeId, setEmployeeId] = useState("All");
   const [assignTarget, setAssignTarget] = useState<Lead | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const { push } = useToast();
   const { employees, services: serviceList, employeeById } = useDirectory();
+  const { user } = useAuth();
+  const canManageLeads = user?.role !== "EMPLOYEE";
 
   const filters: LeadFilters = useMemo(
     () => ({ search, status, priority, service, employeeId }),
@@ -39,11 +44,21 @@ function LeadsPageInner() {
   );
 
   useEffect(() => {
-    getLeads(filters).then((data) => {
-      setLeads(data);
-      setLoading(false);
-    });
-  }, [filters]);
+    let active = true;
+    getLeads(filters)
+      .then((data) => {
+        if (active) setLeads(data);
+      })
+      .catch((error) => {
+        if (active) push({ kind: "error", title: "Failed to load leads", description: error instanceof Error ? error.message : "Please try again." });
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [filters, push]);
 
   const { page, setPage, totalPages, pageItems, totalItems, pageSize } = usePagination(leads, 8);
 
@@ -62,6 +77,20 @@ function LeadsPageInner() {
     await deleteLead(deleteTarget.id);
     setLeads((prev) => prev.filter((l) => l.id !== deleteTarget.id));
     push({ kind: "success", title: "Lead deleted" });
+  }
+
+  async function handleCreate(data: LeadInput, idempotencyKey?: string) {
+    const created = await createLead(data, idempotencyKey);
+    try {
+      setLeads(await getLeads(filters));
+    } catch (error) {
+      setLeads((current) => [created, ...current.filter((lead) => lead.id !== created.id)]);
+      push({
+        kind: "error",
+        title: "Lead created, but list refresh failed",
+        description: error instanceof Error ? error.message : "Refresh the page to see the latest list.",
+      });
+    }
   }
 
   const total = leads.length;
@@ -122,14 +151,16 @@ function LeadsPageInner() {
               </option>
             ))}
           </select>
-          <button
-            type="button"
-            onClick={() => push({ kind: "info", title: "Manual lead creation", description: "Coming soon — leads currently arrive via WhatsApp." })}
-            className="ml-auto flex items-center gap-2 rounded-xl bg-brand-red px-4 py-2.5 text-sm font-bold text-white transition-transform hover:scale-[1.02]"
-          >
-            <Plus className="h-4 w-4" />
-            New Lead
-          </button>
+          {canManageLeads && (
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className="ml-auto flex items-center gap-2 rounded-xl bg-brand-red px-4 py-2.5 text-sm font-bold text-white transition-transform hover:scale-[1.02]"
+            >
+              <Plus className="h-4 w-4" />
+              New Lead
+            </button>
+          )}
         </div>
       </Card>
 
@@ -140,7 +171,11 @@ function LeadsPageInner() {
           <EmptyState icon={Search} title="No leads found" description="Try adjusting your filters or search term." />
         ) : (
           <>
-            <LeadTable leads={pageItems} onAssign={setAssignTarget} onDelete={setDeleteTarget} />
+            <LeadTable
+              leads={pageItems}
+              onAssign={canManageLeads ? setAssignTarget : undefined}
+              onDelete={canManageLeads ? setDeleteTarget : undefined}
+            />
             <div className="pt-4">
               <Pagination page={page} totalPages={totalPages} onChange={setPage} totalItems={totalItems} pageSize={pageSize} />
             </div>
@@ -155,6 +190,13 @@ function LeadsPageInner() {
         description={assignTarget ? `Assign ${assignTarget.clientName}'s requirement to an employee.` : undefined}
         onAssign={handleAssign}
       />
+      {canManageLeads && createOpen && (
+        <LeadFormModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onSave={handleCreate}
+        />
+      )}
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}

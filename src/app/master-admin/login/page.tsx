@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!loading && user) router.replace("/master-admin");
+    if (!loading && user) router.replace(user.role === "EMPLOYEE" ? "/employee/dashboard" : "/master-admin");
   }, [loading, user, router]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -26,8 +26,8 @@ export default function LoginPage() {
     setError("");
     setSubmitting(true);
     try {
-      await login(email.trim(), password);
-      router.replace("/master-admin");
+      const signedInUser = await login(email.trim(), password);
+      router.replace(signedInUser.role === "EMPLOYEE" ? "/employee/dashboard" : "/master-admin");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {

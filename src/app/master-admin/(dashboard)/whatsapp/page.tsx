@@ -157,8 +157,11 @@ export default function WhatsAppInboxPage() {
           <FaqPanel />
         </div>
       ) : (
-        <div className="grid flex-1 grid-cols-1 overflow-hidden rounded-2xl border border-black/6 bg-white shadow-sm lg:grid-cols-[320px_1fr_320px]">
-          <div className={cn("min-h-0 border-black/6 lg:block lg:border-r", mobileView === "list" ? "block" : "hidden")}>
+        // minmax(0,…) tracks let the chat column and its message list shrink and
+        // scroll instead of pushing the details panel and composer out of view.
+        // Between lg and xl the details panel takes the chat's place on demand.
+        <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] overflow-hidden rounded-2xl border border-black/6 bg-white shadow-sm lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_300px]">
+          <div className={cn("min-h-0 min-w-0 border-black/6 lg:block lg:border-r", mobileView === "list" ? "block" : "hidden")}>
             {loadingConversations ? (
               <div className="flex h-full items-center justify-center text-neutral-400">
                 <div className="text-center">
@@ -193,7 +196,12 @@ export default function WhatsAppInboxPage() {
               />
             )}
           </div>
-          <div className={cn("min-h-0 lg:block", mobileView === "chat" ? "block" : "hidden")}>
+          <div
+            className={cn(
+              "min-h-0 min-w-0",
+              mobileView === "chat" ? "block" : mobileView === "details" ? "hidden xl:block" : "hidden lg:block"
+            )}
+          >
             {loadingMessages ? (
               <div className="flex h-full items-center justify-center text-neutral-400">
                 <div className="text-center">
@@ -227,7 +235,7 @@ export default function WhatsAppInboxPage() {
               />
             )}
           </div>
-          <div className={cn("min-h-0 border-black/6 lg:block lg:border-l", mobileView === "details" ? "block" : "hidden")}>
+          <div className={cn("min-h-0 min-w-0 border-black/6 xl:block xl:border-l", mobileView === "details" ? "block" : "hidden")}>
             <ClientDetailsPanel conversation={active} onBack={() => setMobileView("chat")} onAssign={() => setAssignOpen(true)} />
           </div>
         </div>

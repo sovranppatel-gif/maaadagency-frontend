@@ -8,6 +8,7 @@ import { Avatar } from "../ui/Avatar";
 import { StatusBadge } from "../ui/StatusBadge";
 import { getLead } from "@/lib/api/leads";
 import { useDirectory } from "@/lib/directory";
+import { useAuth } from "@/lib/auth-context";
 import { formatDate } from "@/lib/format";
 
 export function ClientDetailsPanel({
@@ -20,21 +21,24 @@ export function ClientDetailsPanel({
   onAssign?: () => void;
 }) {
   const { clientById, employeeById } = useDirectory();
-  const [lead, setLead] = useState<Lead | undefined>(undefined);
+  const { user } = useAuth();
+  const [leadResult, setLeadResult] = useState<{ id: string; lead?: Lead } | null>(null);
 
   useEffect(() => {
     if (!conversation?.leadId) {
-      setLead(undefined);
       return;
     }
+    const leadId = conversation.leadId;
     let active = true;
-    getLead(conversation.leadId).then((l) => {
-      if (active) setLead(l);
+    getLead(leadId).then((lead) => {
+      if (active) setLeadResult({ id: leadId, lead });
     });
     return () => {
       active = false;
     };
   }, [conversation?.leadId]);
+
+  const lead = conversation?.leadId && leadResult?.id === conversation.leadId ? leadResult.lead : undefined;
 
   if (!conversation) {
     return <div className="flex h-full items-center justify-center p-6 text-center text-sm text-neutral-400">Select a conversation</div>;
@@ -47,7 +51,7 @@ export function ClientDetailsPanel({
     <div className="flex h-full flex-col overflow-y-auto">
       <div className="flex items-center gap-2 border-b border-black/6 px-4 py-3">
         {onBack && (
-          <button type="button" onClick={onBack} className="text-neutral-400 hover:text-neutral-700 lg:hidden" aria-label="Back to chat">
+          <button type="button" onClick={onBack} className="text-neutral-400 hover:text-neutral-700 xl:hidden" aria-label="Back to chat">
             <ArrowLeft className="h-5 w-5" />
           </button>
         )}
@@ -56,8 +60,8 @@ export function ClientDetailsPanel({
 
       <div className="flex flex-col items-center border-b border-black/6 p-6 text-center">
         <Avatar name={conversation.clientName} color={conversation.avatarColor} size="lg" />
-        <p className="mt-3 text-base font-bold text-neutral-900">{conversation.clientName}</p>
-        <p className="text-sm text-neutral-500">{conversation.phone}</p>
+        <p className="mt-3 max-w-full truncate text-base font-bold text-neutral-900">{conversation.clientName}</p>
+        <p className="max-w-full truncate text-sm text-neutral-500">{conversation.phone}</p>
         {client?.company && <p className="mt-1 flex items-center gap-1 text-xs text-neutral-400"><Building2 className="h-3 w-3" />{client.company}</p>}
         <div className="mt-3 flex gap-2">
           <a href={`tel:${conversation.phone.replace(/\s+/g, "")}`} className="flex items-center gap-1.5 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-neutral-600 hover:bg-neutral-50">
@@ -105,14 +109,16 @@ export function ClientDetailsPanel({
         ) : (
           <p className="text-sm text-neutral-400">Not assigned yet.</p>
         )}
-        <button
-          type="button"
-          onClick={onAssign}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-black/15 py-2.5 text-sm font-semibold text-neutral-500 hover:border-brand-red/40 hover:text-brand-red"
-        >
-          <UserPlus className="h-4 w-4" />
-          {employee ? "Reassign" : "Assign Employee"}
-        </button>
+        {user?.role !== "EMPLOYEE" && (
+          <button
+            type="button"
+            onClick={onAssign}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-black/15 py-2.5 text-sm font-semibold text-neutral-500 hover:border-brand-red/40 hover:text-brand-red"
+          >
+            <UserPlus className="h-4 w-4" />
+            {employee ? "Reassign" : "Assign Employee"}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -93,7 +93,7 @@ export function LeadTable({
                       </Link>
                       <RowMenu
                         actions={[
-                          { label: "Assign Employee", icon: UserPlus, onClick: () => onAssign?.(lead) },
+                          ...(onAssign ? [{ label: "Assign Employee", icon: UserPlus, onClick: () => onAssign(lead) }] : []),
                           { label: "Open WhatsApp", icon: MessageCircle, onClick: () => {} },
                           ...(onDelete ? [{ label: "Delete Lead", icon: Trash2, destructive: true, onClick: () => onDelete(lead) }] : []),
                         ]}
@@ -138,13 +138,15 @@ export function LeadTable({
                   >
                     <Eye className="h-4 w-4" />
                   </Link>
-                  <button
-                    type="button"
-                    onClick={() => onAssign?.(lead)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                  </button>
+                  {onAssign && (
+                    <button
+                      type="button"
+                      onClick={() => onAssign(lead)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
               {employee && <p className="mt-2 text-xs text-neutral-400">Assigned to {employee.name}</p>}

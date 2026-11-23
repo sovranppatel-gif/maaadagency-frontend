@@ -35,9 +35,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!loading && !user) router.replace("/master-admin/login");
+    else if (!loading && user?.role === "EMPLOYEE") router.replace("/employee/dashboard");
   }, [loading, user, router]);
 
-  if (loading || !user) return <FullScreenLoader />;
+  if (loading || !user || user.role === "EMPLOYEE") return <FullScreenLoader />;
 
   return (
     <DirectoryProvider>

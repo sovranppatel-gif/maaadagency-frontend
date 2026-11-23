@@ -11,6 +11,7 @@ export const whatsappConfig: WhatsAppApiConfig = {
   accessToken: "••••••••••••••••••••••••••••••••",
   webhookVerifyToken: "••••••••••••••",
   webhookUrl: "https://www.maaadagency.com/api/whatsapp/webhook",
+  autoLeadCreationEnabled: false,
   connected: true,
 };
 

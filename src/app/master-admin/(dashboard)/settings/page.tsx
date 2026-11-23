@@ -74,6 +74,7 @@ function MaskedField({
 function WhatsAppSettings() {
   const [config, setConfig] = useState<WhatsAppApiConfig | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingLeadSetting, setSavingLeadSetting] = useState(false);
   const [testing, setTesting] = useState(false);
   const { push } = useToast();
 
@@ -86,9 +87,32 @@ function WhatsAppSettings() {
   async function handleSave() {
     if (!config) return;
     setSaving(true);
-    await saveWhatsAppConfig(config);
-    setSaving(false);
-    push({ kind: "success", title: "Configuration saved", description: "WhatsApp API settings updated." });
+    try {
+      const saved = await saveWhatsAppConfig(config);
+      setConfig((current) => current ? { ...current, autoLeadCreationEnabled: saved.autoLeadCreationEnabled } : current);
+      push({ kind: "success", title: "Configuration saved", description: "WhatsApp API settings updated." });
+    } catch (error) {
+      push({ kind: "error", title: "Could not save configuration", description: error instanceof Error ? error.message : "Please try again." });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleAutoLeadCreationChange(enabled: boolean) {
+    setSavingLeadSetting(true);
+    try {
+      const saved = await saveWhatsAppConfig({ autoLeadCreationEnabled: enabled });
+      setConfig((current) => current ? { ...current, autoLeadCreationEnabled: saved.autoLeadCreationEnabled } : current);
+      push({
+        kind: "success",
+        title: "Automatic lead creation updated",
+        description: saved.autoLeadCreationEnabled ? "WhatsApp bot completions will create leads." : "WhatsApp bot completions will not create leads.",
+      });
+    } catch (error) {
+      push({ kind: "error", title: "Could not update automatic lead creation", description: error instanceof Error ? error.message : "Please try again." });
+    } finally {
+      setSavingLeadSetting(false);
+    }
   }
 
   async function handleTest() {
@@ -128,6 +152,34 @@ function WhatsAppSettings() {
         production values are read from environment variables (<code className="font-mono">WHATSAPP_PHONE_NUMBER_ID</code>,{" "}
         <code className="font-mono">WHATSAPP_BUSINESS_ACCOUNT_ID</code>, <code className="font-mono">WHATSAPP_ACCESS_TOKEN</code>,{" "}
         <code className="font-mono">WHATSAPP_VERIFY_TOKEN</code>) on the backend.
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-xl border border-black/8 p-4">
+        <div>
+          <p className="text-sm font-bold text-neutral-900">Automatic Lead Creation</p>
+          <p className="mt-1 text-xs text-neutral-500">
+            Automatically create a CRM lead when a WhatsApp bot conversation completes.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={config.autoLeadCreationEnabled}
+          aria-label="Automatic Lead Creation"
+          disabled={savingLeadSetting}
+          onClick={() => handleAutoLeadCreationChange(!config.autoLeadCreationEnabled)}
+          className={cn(
+            "relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-wait disabled:opacity-60",
+            config.autoLeadCreationEnabled ? "bg-emerald-600" : "bg-neutral-300"
+          )}
+        >
+          <span
+            className={cn(
+              "absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform",
+              config.autoLeadCreationEnabled ? "translate-x-6" : "translate-x-1"
+            )}
+          />
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -5,7 +5,7 @@
 
 export type Role = "MASTER_ADMIN" | "ADMIN" | "EMPLOYEE";
 
-export type LeadSource = "WhatsApp" | "Website" | "Manual" | "Referral";
+export type LeadSource = "WhatsApp" | "Website" | "Manual" | "Referral" | "Phone Call" | "Office Walk-in" | "Other";
 
 export type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
@@ -28,6 +28,15 @@ export type WorkStatus =
   | "COMPLETED";
 
 export type Availability = "Available" | "Busy" | "On Leave";
+export type EmployeeDepartment =
+  | "Sales"
+  | "Graphic Design"
+  | "Production"
+  | "Installation"
+  | "Accounts"
+  | "Administration"
+  | "Other";
+export type EmploymentType = "Full Time" | "Part Time" | "Contract" | "Intern";
 
 export type ProjectStatus = "Planning" | "Active" | "Review" | "Completed" | "On Hold";
 
@@ -60,14 +69,19 @@ export interface Lead {
   id: string;
   clientId: string;
   clientName: string;
+  contactPersonName?: string;
   phone: string;
+  alternatePhone?: string;
   company?: string;
   email?: string;
   service: string;
   requirement: string;
   description: string;
+  quantitySizeDimensions?: string;
+  internalRemarks?: string;
   referenceWebsite?: string;
   deadline?: string;
+  enquiryDate?: string;
   budget?: string;
   source: LeadSource;
   priority: Priority;
@@ -120,10 +134,18 @@ export interface Work {
 
 export interface Employee {
   id: string;
+  code?: string;
   name: string;
   role: string;
   email: string;
   phone: string;
+  alternatePhone?: string;
+  department?: EmployeeDepartment;
+  employmentType?: EmploymentType;
+  address?: string;
+  city?: string;
+  reportingManager?: string | { id: string; name: string; code?: string };
+  isActive?: boolean;
   avatarColor: string;
   availability: Availability;
   activeWorks: number;
@@ -131,6 +153,22 @@ export interface Employee {
   pendingReview: number;
   skills: string[];
   joinedAt: string;
+}
+
+export interface EmployeeLeadSummary {
+  id: string;
+  code?: string;
+  clientName: string;
+  service: string;
+  requirement: string;
+  status: LeadStatus;
+  priority: Priority;
+  updatedAt: string;
+}
+
+export interface EmployeeProfile extends Employee {
+  works?: Work[];
+  leads?: EmployeeLeadSummary[];
 }
 
 export interface Client {
@@ -271,6 +309,7 @@ export interface WhatsAppApiConfig {
   accessToken: string;
   webhookVerifyToken: string;
   webhookUrl: string;
+  autoLeadCreationEnabled: boolean;
   connected: boolean;
 }
 
@@ -294,4 +333,5 @@ export interface AdminUser {
   email: string;
   role: Role;
   avatarColor: string;
+  employeeId?: string;
 }

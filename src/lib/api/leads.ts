@@ -1,7 +1,7 @@
 // Lead API client — talks to the real Node/Express + MongoDB backend.
 // Function names and signatures match what the dashboard components expect.
 
-import type { Lead, LeadStatus, Priority } from "@/lib/types";
+import type { Lead, LeadSource, LeadStatus, Priority } from "@/lib/types";
 import { http, toQueryString, ApiError } from "../http";
 
 export interface LeadFilters {
@@ -11,6 +11,26 @@ export interface LeadFilters {
   priority?: Priority | "All";
   employeeId?: string | "All";
   source?: string | "All";
+}
+
+export interface LeadInput {
+  clientName: string;
+  contactPersonName?: string;
+  phone: string;
+  alternatePhone?: string;
+  company?: string;
+  email?: string;
+  service: string;
+  requirement: string;
+  description?: string;
+  quantitySizeDimensions?: string;
+  budget?: string;
+  source: LeadSource;
+  assignedEmployeeId?: string;
+  priority: Priority;
+  enquiryDate?: string;
+  deadline?: string;
+  internalRemarks?: string;
 }
 
 export async function getLeads(filters: LeadFilters = {}): Promise<Lead[]> {
@@ -45,8 +65,14 @@ export async function updateLeadStatus(id: string, status: LeadStatus): Promise<
   }
 }
 
-export async function createLead(data: Partial<Lead>): Promise<Lead> {
-  return http.post<Lead>("/leads", data);
+export async function createLead(data: LeadInput, idempotencyKey?: string): Promise<Lead> {
+  return http.post<Lead>("/leads", data, {
+    headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
+  });
+}
+
+export async function updateLead(id: string, data: Partial<LeadInput>): Promise<Lead> {
+  return http.patch<Lead>(`/leads/${id}`, data);
 }
 
 export async function deleteLead(id: string): Promise<boolean> {

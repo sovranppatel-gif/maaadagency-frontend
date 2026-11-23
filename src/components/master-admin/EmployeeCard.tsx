@@ -1,13 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, Phone, UserPlus, Pencil, UserX } from "lucide-react";
+import { Mail, Phone, UserPlus, Pencil, UserX, UserCheck } from "lucide-react";
 import type { Employee } from "@/lib/types";
 import { Avatar } from "./ui/Avatar";
 import { StatusBadge } from "./ui/StatusBadge";
 import { RowMenu } from "./ui/RowMenu";
 
-export function EmployeeCard({ employee, onAssign, index = 0 }: { employee: Employee; onAssign?: (e: Employee) => void; index?: number }) {
+export function EmployeeCard({
+  employee,
+  onAssign,
+  onEdit,
+  onToggleStatus,
+  index = 0,
+}: {
+  employee: Employee;
+  onAssign?: (e: Employee) => void;
+  onEdit?: (e: Employee) => void;
+  onToggleStatus?: (e: Employee) => void;
+  index?: number;
+}) {
+  const isActive = employee.isActive !== false;
   return (
     <div
       className="group rounded-2xl border border-black/6 bg-white p-4 shadow-sm transition-shadow hover:shadow-lg hover:shadow-black/5"
@@ -20,26 +33,36 @@ export function EmployeeCard({ employee, onAssign, index = 0 }: { employee: Empl
             <Link href={`/master-admin/employees/${employee.id}`} className="text-sm font-bold text-neutral-900 hover:text-brand-red">
               {employee.name}
             </Link>
+            <p className="text-[11px] font-semibold text-neutral-400">{employee.code ?? "Employee ID pending"}</p>
             <p className="text-xs text-neutral-500">{employee.role}</p>
+            {employee.department && <p className="text-xs text-neutral-400">{employee.department}</p>}
             <div className="mt-1.5">
-              <StatusBadge status={employee.availability} />
+              <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${isActive ? "bg-emerald-50 text-emerald-700" : "bg-neutral-100 text-neutral-500"}`}>
+                {isActive ? "Active" : "Inactive"}
+              </span>
+              <StatusBadge status={employee.availability} className="ml-1.5" />
             </div>
           </div>
         </div>
         <RowMenu
           actions={[
             { label: "Assign Work", icon: UserPlus, onClick: () => onAssign?.(employee) },
-            { label: "Edit Profile", icon: Pencil, onClick: () => {} },
-            { label: "Deactivate", icon: UserX, destructive: true, onClick: () => {} },
+            { label: "Edit Profile", icon: Pencil, onClick: () => onEdit?.(employee) },
+            {
+              label: isActive ? "Deactivate" : "Activate",
+              icon: isActive ? UserX : UserCheck,
+              destructive: isActive,
+              onClick: () => onToggleStatus?.(employee),
+            },
           ]}
         />
       </div>
 
       <div className="mt-4 space-y-1.5 text-xs text-neutral-500">
-        <p className="flex items-center gap-1.5">
+        <p className="flex min-w-0 items-center gap-1.5">
           <Mail className="h-3.5 w-3.5" /> {employee.email}
         </p>
-        <p className="flex items-center gap-1.5">
+        <p className="flex min-w-0 items-center gap-1.5">
           <Phone className="h-3.5 w-3.5" /> {employee.phone}
         </p>
       </div>

@@ -38,7 +38,7 @@ export const adminNavItems: AdminNavItem[] = [
   { label: "Work Management", href: "/master-admin/work", icon: ClipboardList, group: "Pipeline", keywords: "tasks assignments" },
   { label: "Clients", href: "/master-admin/clients", icon: Building2, group: "Directory", keywords: "customers companies" },
   { label: "Projects", href: "/master-admin/projects", icon: FolderKanban, group: "Directory" },
-  { label: "Employees", href: "/master-admin/employees", icon: Users, group: "Directory", keywords: "team staff" },
+  { label: "Employees", href: "/master-admin/employees", icon: Users, group: "Directory", roles: ["MASTER_ADMIN", "ADMIN"], keywords: "team staff" },
   { label: "Services", href: "/master-admin/services", icon: Layers, group: "Directory" },
   { label: "Files & Reports", href: "/master-admin/files", icon: FileText, group: "Workspace", keywords: "uploads documents" },
   { label: "Notifications", href: "/master-admin/notifications", icon: Bell, group: "Workspace", keywords: "alerts" },
