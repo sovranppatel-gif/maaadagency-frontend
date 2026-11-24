@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { EmployeePortalShell } from "@/components/employee/EmployeePortalShell";
 
 export default function EmployeePortalLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -17,5 +18,5 @@ export default function EmployeePortalLayout({ children }: { children: React.Rea
     return <div className="flex min-h-screen items-center justify-center bg-neutral-950 text-sm text-neutral-300">Checking employee access…</div>;
   }
 
-  return children;
+  return <EmployeePortalShell>{children}</EmployeePortalShell>;
 }

@@ -8,11 +8,53 @@ export interface WorkFilters {
   status?: WorkStatus | "All";
   priority?: Priority | "All";
   employeeId?: string | "All";
+  page?: number;
+  limit?: number;
+  sort?: string;
+  upcomingOnly?: "true" | "false";
+}
+
+export interface WorkStats {
+  total: number;
+  UNASSIGNED: number;
+  ASSIGNED: number;
+  IN_PROGRESS: number;
+  SUBMITTED: number;
+  CHANGES_REQUESTED: number;
+  APPROVED: number;
+  COMPLETED: number;
+}
+
+export interface WorkPageMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export interface WorkProgressUpdate {
+  progress?: number;
+  start?: boolean;
+  progressNote?: string;
+  blockedReason?: string;
 }
 
 export async function getWorks(filters: WorkFilters = {}): Promise<Work[]> {
   const qs = toQueryString({ ...filters, limit: 100 });
   return http.get<Work[]>(`/works${qs}`);
+}
+
+export async function getWorksPage(filters: WorkFilters = {}): Promise<{ works: Work[]; meta: WorkPageMeta }> {
+  const response = await http.get<{ data: Work[]; meta: WorkPageMeta }>(
+    `/works${toQueryString({ ...filters })}`,
+    { withMeta: true, cache: "no-store" }
+  );
+  return { works: response.data, meta: response.meta };
+}
+
+export async function getWorkStats(): Promise<WorkStats> {
+  return http.get<WorkStats>("/works/stats", { cache: "no-store" });
 }
 
 export async function getWork(id: string): Promise<Work | undefined> {
@@ -72,9 +114,9 @@ export async function markCompleted(id: string): Promise<Work | undefined> {
   }
 }
 
-export async function updateWorkProgress(id: string, progress: number): Promise<Work | undefined> {
+export async function updateWorkProgress(id: string, update: WorkProgressUpdate): Promise<Work | undefined> {
   try {
-    return await http.patch<Work>(`/works/${id}/progress`, { progress });
+    return await http.patch<Work>(`/works/${id}/progress`, update);
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) return undefined;
     throw err;
@@ -90,7 +132,7 @@ export async function submitWork(
   try {
     return await http.post<Work>(`/works/${id}/submit`, { summary, remarks, timeSpent });
   } catch (err) {
-    if (err instanceof ApiError && (err.status === 404 || err.status === 400)) return undefined;
+    if (err instanceof ApiError && err.status === 404) return undefined;
     throw err;
   }
 }

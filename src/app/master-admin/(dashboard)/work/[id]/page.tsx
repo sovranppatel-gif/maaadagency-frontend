@@ -174,6 +174,16 @@ export default function WorkDetailPage({ params }: { params: Promise<{ id: strin
                 style={{ width: `${work.progress}%` }}
               />
             </div>
+            {work.progressNote && (
+              <p className="mt-3 rounded-lg bg-neutral-50 p-3 text-sm text-neutral-600">
+                <span className="font-semibold text-neutral-800">Latest progress note:</span> {work.progressNote}
+              </p>
+            )}
+            {work.blockedReason && (
+              <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                <span className="font-semibold">Blocked:</span> {work.blockedReason}
+              </p>
+            )}
           </Card>
 
           {work.attachments.length > 0 && (

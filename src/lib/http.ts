@@ -103,8 +103,48 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
   return json?.data as T;
 }
 
+async function requestBlob(
+  path: string,
+  options: Omit<RequestOptions, "body" | "withMeta"> = {},
+  isRetry = false
+): Promise<Blob> {
+  const { skipAuthRetry, headers, ...rest } = options;
+  const token = getAccessToken();
+  const res = await fetch(`${API_URL}${path}`, {
+    ...rest,
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...headers,
+    },
+  });
+
+  if (res.status === 401 && !skipAuthRetry && !isRetry) {
+    const newToken = await refreshAccessToken();
+    if (newToken) return requestBlob(path, options, true);
+    clearAuth();
+    if (typeof window !== "undefined" && !window.location.pathname.endsWith("/login")) {
+      const loginPath = window.location.pathname.startsWith("/employee") ? "/employee/login" : "/master-admin/login";
+      window.location.href = loginPath;
+    }
+  }
+
+  if (!res.ok) {
+    let json: Envelope<unknown> | null = null;
+    try {
+      json = (await res.json()) as Envelope<unknown>;
+    } catch {
+      json = null;
+    }
+    throw new ApiError(res.status, json?.error?.message ?? `Request failed (${res.status})`, json?.error?.details);
+  }
+  return res.blob();
+}
+
 export const http = {
   get: <T>(path: string, options?: RequestOptions) => request<T>(path, { ...options, method: "GET" }),
+  getBlob: (path: string, options?: Omit<RequestOptions, "body" | "withMeta">) =>
+    requestBlob(path, { ...options, method: "GET" }),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     request<T>(path, { ...options, method: "POST", body }),
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>

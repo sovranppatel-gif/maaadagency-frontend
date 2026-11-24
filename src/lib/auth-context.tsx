@@ -39,18 +39,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function bootstrap() {
       try {
         if (!getAccessToken()) {
-          const refreshed = await http.post<{ accessToken: string; user: AdminUser }>(
-            "/auth/refresh",
-            undefined,
-            { skipAuthRetry: true }
-          );
-          if (cancelled) return;
-          setAccessToken(refreshed.accessToken);
-          setUser(refreshed.user);
-        } else {
+          await restoreFromRefresh();
+          return;
+        }
+
+        try {
           const me = await http.get<AdminUser>("/auth/me", { skipAuthRetry: true });
-          if (cancelled) return;
-          setUser(me);
+          if (!cancelled) setUser(me);
+        } catch (error) {
+          if (!(error instanceof ApiError) || error.status !== 401) throw error;
+          clearAuth();
+          await restoreFromRefresh();
         }
       } catch {
         if (!cancelled) {
@@ -60,6 +59,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } finally {
         if (!cancelled) setLoading(false);
       }
+    }
+
+    async function restoreFromRefresh() {
+      const refreshed = await http.post<{ accessToken: string; user: AdminUser }>(
+        "/auth/refresh",
+        undefined,
+        { skipAuthRetry: true }
+      );
+      if (cancelled) return;
+      setAccessToken(refreshed.accessToken);
+      setUser(refreshed.user);
     }
 
     bootstrap();

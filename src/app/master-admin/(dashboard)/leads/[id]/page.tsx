@@ -25,6 +25,8 @@ import { ActivityTimeline } from "@/components/master-admin/ActivityTimeline";
 import { AssignmentModal } from "@/components/master-admin/AssignmentModal";
 import { CreateWorkModal } from "@/components/master-admin/CreateWorkModal";
 import { LeadFormModal } from "@/components/master-admin/LeadFormModal";
+import { LeadFollowUpAdminPanel } from "@/components/master-admin/LeadFollowUpAdminPanel";
+import { LeadQuotationPanel } from "@/components/quotations/LeadQuotationPanel";
 import { useToast } from "@/components/master-admin/ui/ToastProvider";
 import { getLead, assignLead, updateLead, type LeadInput } from "@/lib/api/leads";
 import { createWork } from "@/lib/api/works";
@@ -258,6 +260,9 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             )}
           </Card>
+
+          <LeadFollowUpAdminPanel leadId={lead.id} />
+          <LeadQuotationPanel leadId={lead.id} audience="admin" />
 
           <Card>
             <CardHeader title="WhatsApp Conversation" subtitle="Preview of the latest messages." action={

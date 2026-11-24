@@ -49,7 +49,7 @@ export type MessageStatus = "sent" | "delivered" | "read" | "failed";
 export interface Attachment {
   id: string;
   name: string;
-  url: string;
+  url?: string;
   type: "image" | "pdf" | "doc" | "zip" | "other";
   size: string;
   uploadedBy: string;
@@ -67,6 +67,7 @@ export interface ActivityItem {
 
 export interface Lead {
   id: string;
+  code?: string;
   clientId: string;
   clientName: string;
   contactPersonName?: string;
@@ -88,6 +89,9 @@ export interface Lead {
   status: LeadStatus;
   assignedEmployeeId?: string;
   assignedDate?: string;
+  followUpLimit?: number;
+  followUpReviewRequired?: boolean;
+  followUpsClosed?: boolean;
   attachments: Attachment[];
   activity: ActivityItem[];
   createdAt: string;
@@ -113,9 +117,11 @@ export interface RevisionRequest {
 
 export interface Work {
   id: string;
+  code?: string;
   leadId?: string;
   clientId: string;
   clientName: string;
+  project?: { id: string; name: string; code?: string };
   employeeId?: string;
   title: string;
   description: string;
@@ -124,6 +130,8 @@ export interface Work {
   deadline: string;
   status: WorkStatus;
   progress: number;
+  progressNote?: string;
+  blockedReason?: string;
   attachments: Attachment[];
   employeeReport?: EmployeeReport;
   revisionHistory: RevisionRequest[];

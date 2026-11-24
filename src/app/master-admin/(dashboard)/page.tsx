@@ -14,6 +14,7 @@ import { useDirectory } from "@/lib/directory";
 import { getLeads, assignLead } from "@/lib/api/leads";
 import { getDashboardSummary, type DashboardSummary } from "@/lib/api/analytics";
 import { getWhatsAppStatus } from "@/lib/api/whatsapp";
+import { getFollowUpReport, type FollowUpReport } from "@/lib/api/followUps";
 import type { Lead } from "@/lib/types";
 
 export default function DashboardPage() {
@@ -22,6 +23,8 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [connected, setConnected] = useState(false);
   const [assignTarget, setAssignTarget] = useState<Lead | null>(null);
+  const [followUpReport, setFollowUpReport] = useState<FollowUpReport | null>(null);
+  const [followUpError, setFollowUpError] = useState("");
   const { push } = useToast();
   const { employeeById } = useDirectory();
 
@@ -34,6 +37,9 @@ export default function DashboardPage() {
     getWhatsAppStatus()
       .then((s) => setConnected(s.connected))
       .catch(() => setConnected(false));
+    getFollowUpReport()
+      .then(setFollowUpReport)
+      .catch((reason: unknown) => setFollowUpError(reason instanceof Error ? reason.message : "Could not load follow-up overview."));
   }, []);
 
   const newLeads = summary?.newLeads ?? leads.filter((l) => l.status === "New").length;
@@ -61,6 +67,33 @@ export default function DashboardPage() {
       </div>
 
       <WorkflowPanel leads={leads} />
+
+      <Card>
+        <CardHeader
+          title="Follow-up Overview"
+          subtitle="Sales follow-up monitoring, separate from Work Management status."
+          action={<Link href="/master-admin/follow-ups" className="text-xs font-bold text-brand-red">View report →</Link>}
+        />
+        {followUpError ? (
+          <p role="status" className="text-sm text-amber-700">Follow-up overview unavailable: {followUpError}</p>
+        ) : followUpReport ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ["Never contacted", followUpReport.leadsNeverContacted],
+              ["Due today", followUpReport.dueToday],
+              ["Overdue", followUpReport.overdue],
+              ["Review required", followUpReport.reviewRequired],
+            ].map(([label, count]) => (
+              <div key={label} className="rounded-xl bg-neutral-50 p-3">
+                <p className="text-xs text-neutral-500">{label}</p>
+                <p className="mt-1 text-xl font-extrabold text-neutral-900">{count}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-400">Loading follow-up overview…</p>
+        )}
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">

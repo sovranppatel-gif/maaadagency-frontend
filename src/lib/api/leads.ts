@@ -13,6 +13,29 @@ export interface LeadFilters {
   source?: string | "All";
 }
 
+export interface LeadPageFilters extends LeadFilters {
+  page?: number;
+  limit?: number;
+  sort?: string;
+}
+
+export interface LeadStats {
+  total: number;
+  new: number;
+  assigned: number;
+  inProgress: number;
+  converted: number;
+  byStatus: Partial<Record<LeadStatus, number>>;
+}
+
+export interface LeadPageMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 export interface LeadInput {
   clientName: string;
   contactPersonName?: string;
@@ -36,6 +59,18 @@ export interface LeadInput {
 export async function getLeads(filters: LeadFilters = {}): Promise<Lead[]> {
   const qs = toQueryString({ ...filters, limit: 100 });
   return http.get<Lead[]>(`/leads${qs}`);
+}
+
+export async function getLeadsPage(filters: LeadPageFilters = {}): Promise<{ leads: Lead[]; meta: LeadPageMeta }> {
+  const response = await http.get<{ data: Lead[]; meta: LeadPageMeta }>(
+    `/leads${toQueryString({ ...filters })}`,
+    { withMeta: true, cache: "no-store" }
+  );
+  return { leads: response.data, meta: response.meta };
+}
+
+export async function getLeadStats(): Promise<LeadStats> {
+  return http.get<LeadStats>("/leads/stats", { cache: "no-store" });
 }
 
 export async function getLead(id: string): Promise<Lead | undefined> {
