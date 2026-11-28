@@ -15,7 +15,11 @@ export default function EmployeePortalLayout({ children }: { children: React.Rea
   }, [loading, user, router]);
 
   if (loading || !user || user.role !== "EMPLOYEE") {
-    return <div className="flex min-h-screen items-center justify-center bg-neutral-950 text-sm text-neutral-300">Checking employee access…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg text-sm text-muted">
+        Checking employee access…
+      </div>
+    );
   }
 
   return <EmployeePortalShell>{children}</EmployeePortalShell>;

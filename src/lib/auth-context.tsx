@@ -1,8 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { http, ApiError } from "./http";
-import { getAccessToken, setAccessToken, clearAuth } from "./auth-storage";
+import { clearAuth, getAccessToken, portalForPath, setAccessToken, type AuthPortal } from "./auth-storage";
 import type { AdminUser } from "./types";
 
 interface LoginResponse {
@@ -12,7 +13,7 @@ interface LoginResponse {
 
 interface AuthContextValue {
   user: AdminUser | null;
-  /** true while the initial session check (refresh + /me) is in flight. */
+  /** true while the current portal's session check (refresh + /me) is in flight. */
   loading: boolean;
   login: (email: string, password: string) => Promise<AdminUser>;
   logout: () => Promise<void>;
@@ -26,79 +27,107 @@ export function useAuth() {
   return ctx;
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [loading, setLoading] = useState(true);
+function portalForRole(role: AdminUser["role"]): AuthPortal {
+  return role === "EMPLOYEE" ? "employee" : "admin";
+}
 
-  // On first load there's no access token yet (it lives in sessionStorage,
-  // cleared on tab close) but the httpOnly refresh cookie may still be
-  // valid, so silently try to resume the session before showing anything.
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const portal = portalForPath(pathname);
+  const [user, setUser] = useState<AdminUser | null>(null);
+  const [bootstrappedPortal, setBootstrappedPortal] = useState<AuthPortal | null>(null);
+
+  // Re-bootstrap whenever switching between /master-admin/* and /employee/* so each
+  // portal resolves only its own access token and httpOnly refresh cookie.
   useEffect(() => {
     let cancelled = false;
-
-    async function bootstrap() {
-      try {
-        if (!getAccessToken()) {
-          await restoreFromRefresh();
-          return;
-        }
-
-        try {
-          const me = await http.get<AdminUser>("/auth/me", { skipAuthRetry: true });
-          if (!cancelled) setUser(me);
-        } catch (error) {
-          if (!(error instanceof ApiError) || error.status !== 401) throw error;
-          clearAuth();
-          await restoreFromRefresh();
-        }
-      } catch {
-        if (!cancelled) {
-          clearAuth();
-          setUser(null);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
 
     async function restoreFromRefresh() {
       const refreshed = await http.post<{ accessToken: string; user: AdminUser }>(
         "/auth/refresh",
         undefined,
-        { skipAuthRetry: true }
+        { skipAuthRetry: true, portal }
       );
       if (cancelled) return;
-      setAccessToken(refreshed.accessToken);
-      setUser(refreshed.user);
+      const targetPortal = portalForRole(refreshed.user.role);
+      setAccessToken(refreshed.accessToken, targetPortal);
+      setUser(targetPortal === portal ? refreshed.user : null);
     }
 
-    bootstrap();
+    async function bootstrap() {
+      try {
+        if (!getAccessToken(portal)) {
+          await restoreFromRefresh();
+          return;
+        }
+
+        try {
+          const me = await http.get<AdminUser>("/auth/me", { skipAuthRetry: true, portal });
+          if (cancelled) return;
+          if (portalForRole(me.role) !== portal) {
+            // Token stored under this portal slot belongs to the other role: clear & re-sync.
+            clearAuth(portal);
+            await restoreFromRefresh();
+            return;
+          }
+          setUser(me);
+        } catch (error) {
+          if (!(error instanceof ApiError) || error.status !== 401) throw error;
+          clearAuth(portal);
+          await restoreFromRefresh();
+        }
+      } catch {
+        if (!cancelled) {
+          clearAuth(portal);
+          setUser(null);
+        }
+      } finally {
+        if (!cancelled) setBootstrappedPortal(portal);
+      }
+    }
+
+    void bootstrap();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [portal]);
 
   const login = useCallback(async (email: string, password: string): Promise<AdminUser> => {
     try {
-      const res = await http.post<LoginResponse>("/auth/login", { email, password }, { skipAuthRetry: true });
-      setAccessToken(res.accessToken);
+      const res = await http.post<LoginResponse>(
+        "/auth/login",
+        { email, password },
+        { skipAuthRetry: true, portal }
+      );
+      const targetPortal = portalForRole(res.user.role);
+      setAccessToken(res.accessToken, targetPortal);
       setUser(res.user);
+      setBootstrappedPortal(targetPortal);
       return res.user;
     } catch (err) {
       if (err instanceof ApiError) throw err;
       throw new ApiError(0, "Could not reach the server. Is the backend running?");
     }
-  }, []);
+  }, [portal]);
 
   const logout = useCallback(async () => {
     try {
-      await http.post("/auth/logout", undefined, { skipAuthRetry: true });
+      await http.post("/auth/logout", undefined, { skipAuthRetry: true, portal });
     } catch {
-      // Best-effort: clear local state regardless of network outcome.
+      // Best-effort: clear only this portal's local session.
     }
-    clearAuth();
+    clearAuth(portal);
     setUser(null);
-  }, []);
+    setBootstrappedPortal(portal);
+  }, [portal]);
 
-  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
+  const userMatchesPortal = user !== null && portalForRole(user.role) === portal;
+  const effectiveUser = userMatchesPortal ? user : null;
+  const effectiveLoading = bootstrappedPortal !== portal;
+
+  return (
+    <AuthContext.Provider value={{ user: effectiveUser, loading: effectiveLoading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }

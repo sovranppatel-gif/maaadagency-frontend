@@ -20,20 +20,22 @@ import {
 import { Card, CardHeader } from "@/components/master-admin/ui/Card";
 import { StatusBadge } from "@/components/master-admin/ui/StatusBadge";
 import { PriorityBadge } from "@/components/master-admin/ui/PriorityBadge";
+import { LEAD_QUALITIES, QualityBadge } from "@/components/master-admin/ui/QualityBadge";
 import { Avatar } from "@/components/master-admin/ui/Avatar";
 import { ActivityTimeline } from "@/components/master-admin/ActivityTimeline";
 import { AssignmentModal } from "@/components/master-admin/AssignmentModal";
 import { CreateWorkModal } from "@/components/master-admin/CreateWorkModal";
 import { LeadFormModal } from "@/components/master-admin/LeadFormModal";
 import { LeadFollowUpAdminPanel } from "@/components/master-admin/LeadFollowUpAdminPanel";
+import { LeadVisitsPanel } from "@/components/visits/LeadVisitsPanel";
 import { LeadQuotationPanel } from "@/components/quotations/LeadQuotationPanel";
 import { useToast } from "@/components/master-admin/ui/ToastProvider";
-import { getLead, assignLead, updateLead, type LeadInput } from "@/lib/api/leads";
+import { getLead, assignLead, updateLead, updateLeadQuality, type LeadInput } from "@/lib/api/leads";
 import { createWork } from "@/lib/api/works";
 import { useDirectory } from "@/lib/directory";
 import { useAuth } from "@/lib/auth-context";
 import { formatDate, formatDateTime } from "@/lib/format";
-import type { Lead } from "@/lib/types";
+import type { Lead, LeadQuality } from "@/lib/types";
 
 export default function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -42,13 +44,19 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const [assignOpen, setAssignOpen] = useState(false);
   const [createWorkOpen, setCreateWorkOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [selectedQuality, setSelectedQuality] = useState<LeadQuality | "">("");
+  const [qualityReason, setQualityReason] = useState("");
+  const [savingQuality, setSavingQuality] = useState(false);
   const { push } = useToast();
-  const { employeeById } = useDirectory();
+  const { employeeById, employees } = useDirectory();
   const { user } = useAuth();
   const canManageLeads = user?.role !== "EMPLOYEE";
 
   useEffect(() => {
-    getLead(id).then((data) => setLead(data ?? null));
+    getLead(id).then((data) => {
+      setLead(data ?? null);
+      setSelectedQuality(data?.quality ?? "");
+    });
   }, [id]);
 
   if (lead === null) notFound();
@@ -84,6 +92,24 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
       internalRemarks: data.internalRemarks ?? "",
     });
     setLead(updated);
+    setSelectedQuality(updated.quality ?? "");
+  }
+
+  async function handleQualityUpdate(event: React.FormEvent) {
+    event.preventDefault();
+    if (!lead || !selectedQuality) return;
+    setSavingQuality(true);
+    try {
+      const updated = await updateLeadQuality(lead.id, selectedQuality, qualityReason);
+      setLead(updated);
+      setSelectedQuality(updated.quality ?? "");
+      setQualityReason("");
+      push({ kind: "success", title: "Lead quality updated", description: `Quality set to ${updated.quality}. Workflow status remains ${updated.status}.` });
+    } catch (error) {
+      push({ kind: "error", title: "Could not update lead quality", description: error instanceof Error ? error.message : "Please try again." });
+    } finally {
+      setSavingQuality(false);
+    }
   }
 
   return (
@@ -149,7 +175,8 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             {lead.clientName} · {lead.service}
           </p>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <QualityBadge quality={lead.quality} />
           <PriorityBadge priority={lead.priority} />
           <StatusBadge status={lead.status} />
         </div>
@@ -262,6 +289,12 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           </Card>
 
           <LeadFollowUpAdminPanel leadId={lead.id} />
+          <LeadVisitsPanel
+            leadId={lead.id}
+            defaultContactPerson={lead.contactPersonName}
+            audience="admin"
+            employees={employees}
+          />
           <LeadQuotationPanel leadId={lead.id} audience="admin" />
 
           <Card>
@@ -318,6 +351,62 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             >
               {employee ? "Reassign Employee" : "Assign Employee"}
             </button>
+          </Card>
+
+          <Card>
+            <CardHeader title="Lead Quality" subtitle="Independent from workflow status." />
+            <form onSubmit={handleQualityUpdate} className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-neutral-500">Current Quality</span>
+                <QualityBadge quality={lead.quality} />
+              </div>
+              <select
+                value={selectedQuality}
+                onChange={(e) => setSelectedQuality(e.target.value as LeadQuality | "")}
+                aria-label="Select lead quality"
+                className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm text-neutral-800 outline-none focus:border-brand-red"
+              >
+                <option value="" disabled>Select quality...</option>
+                {LEAD_QUALITIES.map((q) => (
+                  <option key={q} value={q}>{q}</option>
+                ))}
+              </select>
+              <input
+                value={qualityReason}
+                onChange={(e) => setQualityReason(e.target.value)}
+                maxLength={500}
+                placeholder="Reason / note (optional)"
+                className="w-full rounded-xl border border-black/10 px-3 py-2 text-xs text-neutral-800 outline-none focus:border-brand-red"
+              />
+              <button
+                type="submit"
+                disabled={savingQuality || !selectedQuality || selectedQuality === (lead.quality ?? "")}
+                className="w-full rounded-xl bg-neutral-950 py-2 text-xs font-bold text-white hover:bg-neutral-800 disabled:opacity-50"
+              >
+                {savingQuality ? "Updating…" : "Update Quality"}
+              </button>
+            </form>
+          </Card>
+
+          <Card>
+            <CardHeader title="Quality Change Audit" subtitle="Tracks every quality transition." />
+            {!lead.qualityHistory?.length ? (
+              <p className="text-xs text-neutral-400">No quality changes recorded yet.</p>
+            ) : (
+              <ol className="space-y-2.5 text-xs">
+                {[...lead.qualityHistory].reverse().map((item) => (
+                  <li key={item.id} className="rounded-xl bg-neutral-50 p-2.5">
+                    <p className="font-bold text-neutral-800">
+                      {item.fromQuality ?? "Unclassified"} → {item.toQuality ?? "Unclassified"}
+                    </p>
+                    {item.reason && <p className="mt-0.5 text-neutral-600">{item.reason}</p>}
+                    <p className="mt-1 text-[11px] text-neutral-400">
+                      {formatDateTime(item.timestamp)} · {item.actor}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            )}
           </Card>
 
           <Card>

@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarClock, Clock3, Loader2, MessageSquare, ShieldAlert, Users } from "lucide-react";
-import { getFollowUpReport, type FollowUpReport } from "@/lib/api/followUps";
+import { CalendarClock, Clock3, Download, Loader2, MessageSquare, ShieldAlert, Users } from "lucide-react";
+import { CALL_RESPONSE_OPTIONS, getFollowUpReport, type FollowUpReport } from "@/lib/api/followUps";
+import { ExportLeadsModal } from "@/components/leads/ExportLeadsModal";
+import { useDirectory } from "@/lib/directory";
+import { useToast } from "@/components/master-admin/ui/ToastProvider";
 
 function ReportMetric({ label, value, icon: Icon, tone = "neutral" }: {
   label: string;
@@ -25,9 +28,12 @@ function ReportMetric({ label, value, icon: Icon, tone = "neutral" }: {
 }
 
 export default function MasterAdminFollowUpsPage() {
+  const { employees } = useDirectory();
+  const { push } = useToast();
   const [report, setReport] = useState<FollowUpReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -53,9 +59,19 @@ export default function MasterAdminFollowUpsPage() {
 
   return (
     <div className="space-y-6">
-      <section>
-        <h1 className="text-xl font-extrabold text-neutral-900">Follow-up Overview</h1>
-        <p className="mt-1 text-sm text-neutral-500">Sales follow-up activity is tracked separately from work and review statuses.</p>
+      <section className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-extrabold text-neutral-900">Follow-up Overview</h1>
+          <p className="mt-1 text-sm text-neutral-500">Sales follow-up activity is tracked separately from work and review statuses.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setExportOpen(true)}
+          className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3.5 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50"
+        >
+          <Download className="h-4 w-4" />
+          Export Follow-up Leads
+        </button>
       </section>
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -107,6 +123,37 @@ export default function MasterAdminFollowUpsPage() {
           </div>
         </div>
       </section>
+
+      {report.callResponses && (
+        <section className="rounded-2xl border border-black/6 bg-white p-4 shadow-sm sm:p-5">
+          <h2 className="text-sm font-bold text-neutral-900">Call response breakdown</h2>
+          <p className="mt-1 text-xs text-neutral-500">All recorded call response categories across follow-up attempts.</p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {CALL_RESPONSE_OPTIONS.map((option) => (
+              <div key={option.value} className="rounded-xl bg-neutral-50 p-3">
+                <p className="text-xs text-neutral-500">{option.label}</p>
+                <p className="mt-1 text-xl font-extrabold text-neutral-900">{report.callResponses?.[option.value] ?? 0}</p>
+              </div>
+            ))}
+            {(report.callResponses.LEGACY_UNSPECIFIED ?? 0) > 0 && (
+              <div className="rounded-xl bg-neutral-50 p-3">
+                <p className="text-xs text-neutral-500">Legacy / Unspecified</p>
+                <p className="mt-1 text-xl font-extrabold text-neutral-900">{report.callResponses.LEGACY_UNSPECIFIED}</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+      <ExportLeadsModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        audience="admin"
+        defaultIncludeFollowUps={true}
+        defaultIncludeVisits={false}
+        employees={employees}
+        onSuccess={(msg) => push({ kind: "success", title: msg })}
+        onError={(msg) => push({ kind: "error", title: msg })}
+      />
     </div>
   );
 }

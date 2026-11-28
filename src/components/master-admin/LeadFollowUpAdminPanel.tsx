@@ -3,10 +3,14 @@
 import { useEffect, useState } from "react";
 import { CalendarClock, CheckCircle2, Loader2, LockKeyhole, ShieldAlert } from "lucide-react";
 import { EmployeePagination } from "@/components/employee/EmployeePagination";
+import { HistoricalFollowUpsList } from "@/components/leads/HistoricalFollowUpsList";
 import {
   authorizeMoreFollowUps,
+  CALL_RESPONSE_OPTIONS,
+  callResponseLabel,
   closeLeadFollowUps,
   getLeadFollowUps,
+  type CallResponse,
   type FollowUpPageMeta,
   type LeadFollowUp,
 } from "@/lib/api/followUps";
@@ -17,6 +21,7 @@ export function LeadFollowUpAdminPanel({ leadId }: { leadId: string }) {
   const [meta, setMeta] = useState<FollowUpPageMeta | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [callResponseFilter, setCallResponseFilter] = useState<CallResponse | "All">("All");
   const [additionalAttempts, setAdditionalAttempts] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,7 +31,7 @@ export function LeadFollowUpAdminPanel({ leadId }: { leadId: string }) {
 
   useEffect(() => {
     let active = true;
-    getLeadFollowUps(leadId, page, 50)
+    getLeadFollowUps(leadId, page, 50, callResponseFilter)
       .then(({ followUps: result, meta: pageMeta }) => {
         if (!active) return;
         setFollowUps(result);
@@ -43,7 +48,7 @@ export function LeadFollowUpAdminPanel({ leadId }: { leadId: string }) {
     return () => {
       active = false;
     };
-  }, [leadId, page, refreshKey]);
+  }, [leadId, page, callResponseFilter, refreshKey]);
 
   async function authorizeMore() {
     setSaving(true);
@@ -110,7 +115,24 @@ export function LeadFollowUpAdminPanel({ leadId }: { leadId: string }) {
         </div>
       )}
 
-      {!meta?.closed && <button type="button" onClick={closeSequence} disabled={saving} className="rounded-xl border border-neutral-200 px-3.5 py-2 text-xs font-bold text-neutral-600 hover:bg-neutral-50 disabled:opacity-60">Close follow-ups</button>}
+      <div className="flex flex-wrap items-center gap-2">
+        {!meta?.closed && <button type="button" onClick={closeSequence} disabled={saving} className="rounded-xl border border-neutral-200 px-3.5 py-2 text-xs font-bold text-neutral-600 hover:bg-neutral-50 disabled:opacity-60">Close follow-ups</button>}
+        <select
+          value={callResponseFilter}
+          onChange={(event) => {
+            setPage(1);
+            setLoading(true);
+            setCallResponseFilter(event.target.value as CallResponse | "All");
+          }}
+          aria-label="Filter follow-ups by call response"
+          className="ml-auto rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-neutral-700"
+        >
+          <option value="All">All call responses</option>
+          {CALL_RESPONSE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+      </div>
       {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
       {notice && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
 
@@ -124,7 +146,14 @@ export function LeadFollowUpAdminPanel({ leadId }: { leadId: string }) {
             <li key={followUp.id} className="rounded-xl border border-black/5 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <p className="text-sm font-bold text-neutral-900">Attempt {followUp.attemptNumber} · {followUp.communicationType}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-bold text-neutral-900">Attempt {followUp.attemptNumber} · {followUp.communicationType}</p>
+                    {followUp.callResponse && (
+                      <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700">
+                        {callResponseLabel(followUp.callResponse)}
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-1 text-xs text-neutral-500">{followUp.employee?.name ?? "Employee"}{followUp.employee?.code ? ` · ${followUp.employee.code}` : ""}</p>
                 </div>
                 <p className="text-xs text-neutral-400">{formatDateTime(followUp.contactedAt)}</p>
@@ -142,6 +171,8 @@ export function LeadFollowUpAdminPanel({ leadId }: { leadId: string }) {
         </ol>
       )}
       {!loading && totalPages > 1 && <EmployeePagination page={page} totalPages={totalPages} disabled={saving} onChange={(nextPage) => { setPage(nextPage); setLoading(true); }} />}
+
+      {!loading && <HistoricalFollowUpsList items={meta?.historicalFollowUps} />}
     </section>
   );
 }

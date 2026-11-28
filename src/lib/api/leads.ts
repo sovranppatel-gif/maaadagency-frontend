@@ -1,7 +1,7 @@
 // Lead API client — talks to the real Node/Express + MongoDB backend.
 // Function names and signatures match what the dashboard components expect.
 
-import type { Lead, LeadSource, LeadStatus, Priority } from "@/lib/types";
+import type { Lead, LeadQuality, LeadSource, LeadStatus, Priority } from "@/lib/types";
 import { http, toQueryString, ApiError } from "../http";
 
 export interface LeadFilters {
@@ -9,6 +9,7 @@ export interface LeadFilters {
   service?: string;
   status?: LeadStatus | "All";
   priority?: Priority | "All";
+  quality?: LeadQuality | "UNCLASSIFIED" | "All";
   employeeId?: string | "All";
   source?: string | "All";
 }
@@ -26,6 +27,7 @@ export interface LeadStats {
   inProgress: number;
   converted: number;
   byStatus: Partial<Record<LeadStatus, number>>;
+  byQuality?: Partial<Record<LeadQuality | "UNCLASSIFIED", number>>;
 }
 
 export interface LeadPageMeta {
@@ -51,6 +53,7 @@ export interface LeadInput {
   source: LeadSource;
   assignedEmployeeId?: string;
   priority: Priority;
+  quality?: LeadQuality | null;
   enquiryDate?: string;
   deadline?: string;
   internalRemarks?: string;
@@ -98,6 +101,13 @@ export async function updateLeadStatus(id: string, status: LeadStatus): Promise<
     if (err instanceof ApiError && err.status === 404) return undefined;
     throw err;
   }
+}
+
+export async function updateLeadQuality(id: string, quality: LeadQuality, reason?: string): Promise<Lead> {
+  return http.patch<Lead>(`/leads/${encodeURIComponent(id)}/quality`, {
+    quality,
+    ...(reason?.trim() ? { reason: reason.trim() } : {}),
+  });
 }
 
 export async function createLead(data: LeadInput, idempotencyKey?: string): Promise<Lead> {

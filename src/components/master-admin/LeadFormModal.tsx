@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import type { Lead, LeadSource, Priority } from "@/lib/types";
+import type { Lead, LeadQuality, LeadSource, Priority } from "@/lib/types";
 import type { LeadInput } from "@/lib/api/leads";
 import { useDirectory } from "@/lib/directory";
 import { useToast } from "@/components/master-admin/ui/ToastProvider";
@@ -10,6 +10,7 @@ import { Modal } from "@/components/master-admin/ui/Modal";
 
 const sources: LeadSource[] = ["Phone Call", "Office Walk-in", "Referral", "Website", "Other"];
 const priorities: Priority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+const qualities: LeadQuality[] = ["HOT", "WARM", "COLD", "TRY", "WASTE"];
 
 interface LeadFormValues {
   clientName: string;
@@ -24,6 +25,7 @@ interface LeadFormValues {
   source: LeadSource;
   assignedEmployeeId: string;
   priority: Priority;
+  quality: LeadQuality | "";
   enquiryDate: string;
   deadline: string;
   internalRemarks: string;
@@ -66,6 +68,7 @@ export function LeadFormModal({
     source: lead?.source ?? "Phone Call",
     assignedEmployeeId: "",
     priority: lead?.priority ?? "MEDIUM",
+    quality: lead?.quality ?? "",
     enquiryDate: dateInput(lead?.enquiryDate ?? lead?.createdAt) || localDateInput(),
     deadline: dateInput(lead?.deadline),
     internalRemarks: lead?.internalRemarks ?? "",
@@ -97,6 +100,7 @@ export function LeadFormModal({
       source: values.source,
       assignedEmployeeId: values.assignedEmployeeId || undefined,
       priority: values.priority,
+      quality: values.quality || (lead ? null : undefined),
       enquiryDate: values.enquiryDate || undefined,
       deadline: values.deadline || undefined,
       internalRemarks: values.internalRemarks.trim() || undefined,
@@ -263,6 +267,19 @@ export function LeadFormModal({
             >
               {priorities.map((priority) => (
                 <option key={priority} value={priority}>{priority.charAt(0) + priority.slice(1).toLowerCase()}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-neutral-500">Lead Quality</span>
+            <select
+              value={values.quality}
+              onChange={(event) => set("quality", event.target.value as LeadQuality | "")}
+              className="w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-red focus:ring-2 focus:ring-brand-red/20"
+            >
+              <option value="">Unclassified</option>
+              {qualities.map((q) => (
+                <option key={q} value={q}>{q}</option>
               ))}
             </select>
           </label>

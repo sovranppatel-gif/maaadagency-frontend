@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
@@ -12,17 +13,23 @@ import { ProfileMenu } from "./ProfileMenu";
 
 type TipHandler = (el: HTMLElement | null, label: string) => void;
 
-/** Brand lockup: monogram always, wordmark when there is room. */
+/** Brand lockup: full agency logo when expanded, compact logo emblem when collapsed. */
 export function BrandMark({ expanded }: { expanded: boolean }) {
   return (
     <Link href="/master-admin" aria-label="Maa Ad Agency admin home" className="flex min-w-0 items-center gap-2.5 rounded-control">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-accent font-num text-sm font-semibold text-accent-fg">
-        M
-      </span>
+      <Image
+        src="/images/logo.png"
+        alt="Maa Ad Agency"
+        width={900}
+        height={424}
+        priority
+        className={cn("shrink-0 object-contain", expanded ? "h-9 w-auto" : "h-6 w-10")}
+      />
       {expanded && (
-        <span className="min-w-0 leading-tight">
-          <span className="block truncate text-sm font-semibold tracking-[-0.01em] text-fg">Maa Ad Agency</span>
-          <span className="block text-[10px] font-medium uppercase leading-3 tracking-[0.08em] text-muted">Master Admin</span>
+        <span className="min-w-0 border-l border-border pl-2.5 leading-tight">
+          <span className="block truncate text-[10px] font-semibold uppercase leading-3 tracking-[0.08em] text-muted">
+            Master Admin
+          </span>
         </span>
       )}
     </Link>

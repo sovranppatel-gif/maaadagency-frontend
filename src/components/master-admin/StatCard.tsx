@@ -37,7 +37,7 @@ export function StatCard({
         <span
           className={cn(
             "flex h-10 w-10 items-center justify-center rounded-xl",
-            tone === "red" ? "bg-brand-red text-white" : "bg-neutral-100 text-neutral-600"
+            tone === "red" ? "bg-accent text-accent-fg" : "bg-surface-2 text-muted"
           )}
         >
           <Icon className="h-5 w-5" />
@@ -54,8 +54,8 @@ export function StatCard({
           </span>
         )}
       </div>
-      <p className="mt-4 text-2xl font-extrabold tracking-tight text-neutral-900 sm:text-3xl">{value}</p>
-      <p className="mt-1 text-xs font-medium text-neutral-500">{label}</p>
+      <p className="mt-4 font-num text-2xl font-extrabold tracking-tight text-fg tabular-nums sm:text-3xl">{value}</p>
+      <p className="mt-1 text-xs font-medium text-muted">{label}</p>
     </motion.div>
   );
 

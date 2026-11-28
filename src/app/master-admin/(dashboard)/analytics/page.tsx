@@ -8,7 +8,7 @@ import { DonutChart } from "@/components/master-admin/charts/DonutChart";
 import { LineChart } from "@/components/master-admin/charts/LineChart";
 import { getAnalytics, getWhatsAppWeeklyAnalytics, type AnalyticsData, type WeeklyWhatsAppDatum } from "@/lib/api/analytics";
 import { getDashboardSummary } from "@/lib/api/analytics";
-import { Inbox, TrendingUp, Users, MessageCircle } from "lucide-react";
+import { Inbox, TrendingUp, Users, Building2 } from "lucide-react";
 
 const sourceColors: Record<string, string> = {
   WhatsApp: "#25D366",
@@ -55,10 +55,10 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard icon={Inbox} label="Total Leads" value={totals?.totalLeads ?? 0} tone="red" index={0} change={{ value: "14%", positive: true }} />
-        <StatCard icon={TrendingUp} label="Conversion Rate" value={totals ? `${totals.conversionRate}%` : "—"} index={1} change={{ value: "3%", positive: true }} />
-        <StatCard icon={Users} label="Avg. Completion Time" value={totals ? `${totals.avgCompletionDays} days` : "—"} index={2} change={{ value: "0.8d", positive: true }} />
-        <StatCard icon={MessageCircle} label="WhatsApp Response Rate" value="98%" index={3} change={{ value: "1%", positive: true }} />
+        <StatCard icon={Inbox} label="Total Leads" value={totals?.totalLeads ?? 0} tone="red" index={0} />
+        <StatCard icon={TrendingUp} label="Conversion Rate" value={totals ? `${totals.conversionRate}%` : "—"} index={1} />
+        <StatCard icon={Users} label="Avg. Completion Time" value={totals ? `${totals.avgCompletionDays} days` : "—"} index={2} />
+        <StatCard icon={Building2} label="Total Clients" value={totals?.totalClients ?? 0} index={3} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

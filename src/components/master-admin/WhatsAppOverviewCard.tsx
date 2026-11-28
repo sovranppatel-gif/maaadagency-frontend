@@ -67,14 +67,14 @@ export function WhatsAppOverviewCard({
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
         <Link
           href="/master-admin/whatsapp"
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-red py-2.5 text-sm font-bold text-white transition-transform hover:scale-[1.02]"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-bold text-accent-fg transition-colors hover:bg-accent-hover"
         >
           <MessageCircle className="h-4 w-4" />
           Open WhatsApp Inbox
         </Link>
         <Link
           href="/master-admin/settings?tab=whatsapp"
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-black/10 py-2.5 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-bold text-fg transition-colors hover:bg-surface-2"
         >
           <Settings2 className="h-4 w-4" />
           Configure API

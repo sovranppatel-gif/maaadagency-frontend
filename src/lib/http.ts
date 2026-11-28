@@ -1,9 +1,15 @@
-// Thin fetch wrapper for the Master Admin dashboard talking to the real
-// Node/Express + MongoDB backend (see /server). Centralises the base URL,
-// auth header, JSON envelope handling and 401 -> refresh -> retry flow so
-// every lib/api/*.ts file can stay a plain async function.
+// Thin fetch wrapper for the dashboard talking to the Node/Express + MongoDB
+// backend (see /server). Sends portal-scoped credentials (X-Portal + independent
+// access tokens) so Master Admin and Employee can remain signed in simultaneously
+// in the same browser.
 
-import { getAccessToken, setAccessToken, clearAuth } from "./auth-storage";
+import {
+  clearAuth,
+  getAccessToken,
+  portalForPath,
+  setAccessToken,
+  type AuthPortal,
+} from "./auth-storage";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
@@ -25,28 +31,32 @@ interface Envelope<T> {
   error?: { message: string; details?: unknown };
 }
 
-let refreshPromise: Promise<string | null> | null = null;
+const refreshPromises: Record<AuthPortal, Promise<string | null> | null> = {
+  admin: null,
+  employee: null,
+};
 
-/** Exchanges the httpOnly refresh cookie for a new access token. */
-async function refreshAccessToken(): Promise<string | null> {
-  if (!refreshPromise) {
-    refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+/** Exchanges the portal's httpOnly refresh cookie for a fresh access token. */
+async function refreshAccessToken(portal: AuthPortal): Promise<string | null> {
+  if (!refreshPromises[portal]) {
+    refreshPromises[portal] = fetch(`${API_URL}/auth/refresh`, {
       method: "POST",
       credentials: "include",
+      headers: { "X-Portal": portal },
     })
       .then(async (res) => {
         if (!res.ok) return null;
         const json = (await res.json()) as Envelope<{ accessToken: string }>;
         const token = json.data?.accessToken ?? null;
-        if (token) setAccessToken(token);
+        if (token) setAccessToken(token, portal);
         return token;
       })
       .catch(() => null)
       .finally(() => {
-        refreshPromise = null;
+        refreshPromises[portal] = null;
       });
   }
-  return refreshPromise;
+  return refreshPromises[portal];
 }
 
 export interface RequestOptions extends Omit<RequestInit, "body"> {
@@ -55,11 +65,14 @@ export interface RequestOptions extends Omit<RequestInit, "body"> {
   skipAuthRetry?: boolean;
   /** Return meta (pagination) alongside data instead of just data. */
   withMeta?: boolean;
+  /** Explicit portal override when calling outside route-matched pages. */
+  portal?: AuthPortal;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
-  const { body, skipAuthRetry, withMeta, headers, ...rest } = options;
-  const token = getAccessToken();
+  const { body, skipAuthRetry, withMeta, headers, portal: explicitPortal, ...rest } = options;
+  const portal = explicitPortal ?? portalForPath();
+  const token = getAccessToken(portal);
 
   const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
 
@@ -68,19 +81,20 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
     credentials: "include",
     headers: {
       ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      "X-Portal": portal,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
     body: body === undefined ? undefined : isFormData ? (body as FormData) : JSON.stringify(body),
   });
 
-  // Access token expired mid-session: refresh once and replay the request.
+  // Access token expired mid-session: refresh once for this portal and replay the request.
   if (res.status === 401 && !skipAuthRetry && !isRetry) {
-    const newToken = await refreshAccessToken();
+    const newToken = await refreshAccessToken(portal);
     if (newToken) return request<T>(path, options, true);
-    clearAuth();
+    clearAuth(portal);
     if (typeof window !== "undefined" && !window.location.pathname.endsWith("/login")) {
-      const loginPath = window.location.pathname.startsWith("/employee") ? "/employee/login" : "/master-admin/login";
+      const loginPath = portal === "employee" ? "/employee/login" : "/master-admin/login";
       window.location.href = loginPath;
     }
   }
@@ -108,23 +122,25 @@ async function requestBlob(
   options: Omit<RequestOptions, "body" | "withMeta"> = {},
   isRetry = false
 ): Promise<Blob> {
-  const { skipAuthRetry, headers, ...rest } = options;
-  const token = getAccessToken();
+  const { skipAuthRetry, headers, portal: explicitPortal, ...rest } = options;
+  const portal = explicitPortal ?? portalForPath();
+  const token = getAccessToken(portal);
   const res = await fetch(`${API_URL}${path}`, {
     ...rest,
     credentials: "include",
     headers: {
+      "X-Portal": portal,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
   });
 
   if (res.status === 401 && !skipAuthRetry && !isRetry) {
-    const newToken = await refreshAccessToken();
+    const newToken = await refreshAccessToken(portal);
     if (newToken) return requestBlob(path, options, true);
-    clearAuth();
+    clearAuth(portal);
     if (typeof window !== "undefined" && !window.location.pathname.endsWith("/login")) {
-      const loginPath = window.location.pathname.startsWith("/employee") ? "/employee/login" : "/master-admin/login";
+      const loginPath = portal === "employee" ? "/employee/login" : "/master-admin/login";
       window.location.href = loginPath;
     }
   }

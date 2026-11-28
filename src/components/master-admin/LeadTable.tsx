@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, UserPlus, MessageCircle, Trash2 } from "lucide-react";
 import type { Lead } from "@/lib/types";
 import { Avatar } from "./ui/Avatar";
 import { StatusBadge } from "./ui/StatusBadge";
 import { PriorityBadge } from "./ui/PriorityBadge";
+import { QualityBadge } from "./ui/QualityBadge";
 import { RowMenu } from "./ui/RowMenu";
 import { useDirectory } from "@/lib/directory";
 import { timeAgo } from "@/lib/format";
@@ -21,6 +23,7 @@ export function LeadTable({
   onAssign?: (lead: Lead) => void;
   onDelete?: (lead: Lead) => void;
 }) {
+  const router = useRouter();
   const { employeeById } = useDirectory();
   return (
     <div>
@@ -36,6 +39,7 @@ export function LeadTable({
               <th className="whitespace-nowrap px-3 py-3">Requirement</th>
               {!compact && <th className="whitespace-nowrap px-3 py-3">Source</th>}
               <th className="whitespace-nowrap px-3 py-3">Assigned To</th>
+              <th className="whitespace-nowrap px-3 py-3">Quality</th>
               <th className="whitespace-nowrap px-3 py-3">Priority</th>
               <th className="whitespace-nowrap px-3 py-3">Status</th>
               <th className="whitespace-nowrap px-3 py-3">Received</th>
@@ -76,6 +80,9 @@ export function LeadTable({
                     )}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
+                    <QualityBadge quality={lead.quality} />
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3">
                     <PriorityBadge priority={lead.priority} />
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
@@ -94,7 +101,7 @@ export function LeadTable({
                       <RowMenu
                         actions={[
                           ...(onAssign ? [{ label: "Assign Employee", icon: UserPlus, onClick: () => onAssign(lead) }] : []),
-                          { label: "Open WhatsApp", icon: MessageCircle, onClick: () => {} },
+                          { label: "Open WhatsApp", icon: MessageCircle, onClick: () => router.push("/master-admin/whatsapp") },
                           ...(onDelete ? [{ label: "Delete Lead", icon: Trash2, destructive: true, onClick: () => onDelete(lead) }] : []),
                         ]}
                       />
@@ -128,6 +135,7 @@ export function LeadTable({
               </p>
               <div className="mt-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
+                  <QualityBadge quality={lead.quality} />
                   <PriorityBadge priority={lead.priority} />
                   <span className="text-xs text-neutral-400">{timeAgo(lead.createdAt)}</span>
                 </div>

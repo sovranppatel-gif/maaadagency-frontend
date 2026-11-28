@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import { EmployeePagination } from "@/components/employee/EmployeePagination";
+import { LEAD_QUALITIES, QualityBadge } from "@/components/master-admin/ui/QualityBadge";
+import { ExportLeadsModal } from "@/components/leads/ExportLeadsModal";
 import { getLeadsPage } from "@/lib/api/leads";
 import { formatDate } from "@/lib/format";
-import type { Lead, LeadStatus, Priority } from "@/lib/types";
+import type { Lead, LeadQuality, LeadStatus, Priority } from "@/lib/types";
 
 const pageSize = 12;
 const leadStatuses: LeadStatus[] = ["New", "Assigned", "In Progress", "Submitted", "Changes Requested", "Approved", "Completed"];
 const priorities: Priority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+const qualities: (LeadQuality | "UNCLASSIFIED")[] = [...LEAD_QUALITIES, "UNCLASSIFIED"];
 
 function PriorityPill({ priority }: { priority: Priority }) {
   const tone = priority === "URGENT" ? "bg-red-100 text-red-800" : priority === "HIGH" ? "bg-orange-100 text-orange-800" : priority === "MEDIUM" ? "bg-amber-100 text-amber-800" : "bg-neutral-100 text-neutral-600";
@@ -24,12 +27,14 @@ export default function EmployeeLeadsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<LeadStatus | "All">("All");
   const [priority, setPriority] = useState<Priority | "All">("All");
+  const [quality, setQuality] = useState<LeadQuality | "UNCLASSIFIED" | "All">("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
-    getLeadsPage({ page, limit: pageSize, search: search.trim(), status, priority, sort: "-updatedAt" })
+    getLeadsPage({ page, limit: pageSize, search: search.trim(), status, priority, quality, sort: "-updatedAt" })
       .then(({ leads: result, meta }) => {
         if (!active) return;
         setLeads(result);
@@ -45,7 +50,7 @@ export default function EmployeeLeadsPage() {
     return () => {
       active = false;
     };
-  }, [page, search, status, priority]);
+  }, [page, search, status, priority, quality]);
 
   function updateFilter(update: () => void) {
     setPage(1);
@@ -56,9 +61,19 @@ export default function EmployeeLeadsPage() {
 
   return (
     <div className="space-y-5">
-      <section>
-        <h1 className="text-xl font-extrabold text-neutral-900">My Leads</h1>
-        <p className="mt-1 text-sm text-neutral-500">Leads assigned to your employee account.</p>
+      <section className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-extrabold text-neutral-900">My Leads</h1>
+          <p className="mt-1 text-sm text-neutral-500">Leads assigned to your employee account.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setExportOpen(true)}
+          className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3.5 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50"
+        >
+          <Download className="h-4 w-4" />
+          Export My Leads
+        </button>
       </section>
 
       <section className="flex flex-col gap-3 rounded-2xl border border-black/6 bg-white p-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:p-4">
@@ -81,6 +96,10 @@ export default function EmployeeLeadsPage() {
           <option value="All">All priorities</option>
           {priorities.map((value) => <option key={value} value={value}>{value}</option>)}
         </select>
+        <select value={quality} onChange={(event) => updateFilter(() => setQuality(event.target.value as LeadQuality | "UNCLASSIFIED" | "All"))} aria-label="Filter leads by quality" className="rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm text-neutral-700">
+          <option value="All">All qualities</option>
+          {qualities.map((value) => <option key={value} value={value}>{value === "UNCLASSIFIED" ? "Unclassified" : value}</option>)}
+        </select>
       </section>
 
       {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
@@ -89,7 +108,7 @@ export default function EmployeeLeadsPage() {
         {loading ? (
           <div className="space-y-3 p-4">{[1, 2, 3].map((item) => <div key={item} className="h-20 animate-pulse rounded-xl bg-neutral-100" />)}</div>
         ) : leads.length === 0 ? (
-          <p className="px-4 py-12 text-center text-sm text-neutral-500">{search || status !== "All" || priority !== "All" ? "No leads match these filters." : "No leads are assigned to you yet."}</p>
+          <p className="px-4 py-12 text-center text-sm text-neutral-500">{search || status !== "All" || priority !== "All" || quality !== "All" ? "No leads match these filters." : "No leads are assigned to you yet."}</p>
         ) : (
           <ul className="divide-y divide-black/5">
             {leads.map((lead) => (
@@ -105,6 +124,7 @@ export default function EmployeeLeadsPage() {
                       <p className="mt-1 text-xs text-neutral-500">{lead.phone}</p>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <QualityBadge quality={lead.quality} />
                       <PriorityPill priority={lead.priority} />
                       <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-semibold text-neutral-600">{lead.status}</span>
                     </div>
@@ -120,6 +140,13 @@ export default function EmployeeLeadsPage() {
         )}
         {!loading && totalPages > 1 && <EmployeePagination page={page} totalPages={totalPages} onChange={(nextPage) => { setLoading(true); setPage(nextPage); }} />}
       </section>
+
+      <ExportLeadsModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        audience="employee"
+        initialFilters={{ search, status, priority, quality }}
+      />
     </div>
   );
 }

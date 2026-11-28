@@ -9,6 +9,114 @@ export type LeadSource = "WhatsApp" | "Website" | "Manual" | "Referral" | "Phone
 
 export type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
+export type LeadQuality = "HOT" | "WARM" | "COLD" | "TRY" | "WASTE";
+
+export type CallResponse =
+  | "NOT_PICKED"
+  | "BUSY"
+  | "NO_RESPONSE"
+  | "INTERESTED"
+  | "CALL_BACK"
+  | "NOT_CONNECTED"
+  | "CALL_CUT"
+  | "OUT_OF_SERVICE"
+  | "PRICING_CONCERN"
+  | "NOT_INTERESTED"
+  | "OTHER";
+
+export interface LeadQualityHistoryItem {
+  id: string;
+  fromQuality?: LeadQuality | null;
+  toQuality?: LeadQuality | null;
+  actor: string;
+  actorRole?: Role;
+  reason?: string;
+  timestamp: string;
+}
+
+export type VisitType =
+  | "SITE_VISIT"
+  | "OFFICE_MEETING"
+  | "CLIENT_MEETING"
+  | "FIELD_VISIT"
+  | "VIRTUAL_MEETING"
+  | "OTHER";
+
+export type VisitStatus = "SCHEDULED" | "RESCHEDULED" | "COMPLETED" | "CANCELLED";
+
+export type VisitOutcome =
+  | "INTERESTED"
+  | "FOLLOW_UP_REQUIRED"
+  | "QUOTATION_REQUESTED"
+  | "NOT_INTERESTED"
+  | "OTHER";
+
+export type VisitLocationType = "CUSTOMER_LOCATION" | "OFFICE" | "PROJECT_SITE" | "VIRTUAL" | "OTHER";
+
+export type VisitEventType = "SCHEDULED" | "RESCHEDULED" | "COMPLETED" | "CANCELLED" | "REASSIGNED";
+
+export interface VisitScheduleSnapshot {
+  start: string;
+  end?: string | null;
+}
+
+export interface VisitHistoryItem {
+  id: string;
+  eventType: VisitEventType;
+  previousStatus?: VisitStatus | null;
+  newStatus?: VisitStatus | null;
+  previousSchedule?: VisitScheduleSnapshot;
+  newSchedule?: VisitScheduleSnapshot;
+  actorName: string;
+  actorRole?: Role | "SYSTEM";
+  note?: string;
+  timestamp: string;
+}
+
+export interface LeadVisit {
+  id: string;
+  code?: string;
+  leadId: string;
+  assignedEmployeeId?: string;
+  visitType: VisitType;
+  title: string;
+  scheduledStart: string;
+  scheduledEnd?: string | null;
+  timezone: string;
+  locationType: VisitLocationType;
+  locationAddress: string;
+  meetingLink: string;
+  status: VisitStatus;
+  customerContactPerson?: string;
+  customerResponse: string;
+  outcome?: VisitOutcome;
+  notes: string;
+  cancellationReason: string;
+  completedAt?: string;
+  cancelledAt?: string;
+  history: VisitHistoryItem[];
+  lead?: {
+    id: string;
+    code?: string;
+    clientName: string;
+    contactPersonName?: string;
+    phone: string;
+    service: string;
+    requirement: string;
+    status: LeadStatus;
+    quality?: LeadQuality | null;
+    assignedEmployeeId?: string;
+  };
+  assignedEmployee?: {
+    id: string;
+    code?: string;
+    name: string;
+    avatarColor?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type LeadStatus =
   | "New"
   | "Assigned"
@@ -65,6 +173,33 @@ export interface ActivityItem {
   icon?: string;
 }
 
+export interface HistoricalFollowUp {
+  callDate?: string | null;
+  rawDateLabel?: string;
+  callResponse?: CallResponse | "";
+  rawResponse?: string;
+  note?: string;
+  sourceSheet?: string;
+  sourceRow?: number;
+  importJobId?: string;
+  importedAt?: string;
+}
+
+export interface LeadImportMetadata {
+  importJobId?: string;
+  sourceFileName?: string;
+  sourceSheet?: string;
+  sourceRow?: number;
+  sourceSerial?: string;
+  rawSource?: string;
+  rawQuality?: string;
+  rawAddress?: string;
+  rawVisitNote?: string;
+  visitWarnings?: string[];
+  fingerprint?: string;
+  importedAt?: string;
+}
+
 export interface Lead {
   id: string;
   code?: string;
@@ -86,6 +221,7 @@ export interface Lead {
   budget?: string;
   source: LeadSource;
   priority: Priority;
+  quality?: LeadQuality | null;
   status: LeadStatus;
   assignedEmployeeId?: string;
   assignedDate?: string;
@@ -94,6 +230,9 @@ export interface Lead {
   followUpsClosed?: boolean;
   attachments: Attachment[];
   activity: ActivityItem[];
+  qualityHistory?: LeadQualityHistoryItem[];
+  historicalFollowUps?: HistoricalFollowUp[];
+  importMetadata?: LeadImportMetadata;
   createdAt: string;
   updatedAt: string;
 }

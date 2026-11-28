@@ -55,10 +55,7 @@ export default function WhatsAppInboxPage() {
   }
 
   useEffect(() => {
-    if (!activeId) {
-      setMessages([]);
-      return;
-    }
+    if (!activeId) return;
     loadMessagesData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId]);

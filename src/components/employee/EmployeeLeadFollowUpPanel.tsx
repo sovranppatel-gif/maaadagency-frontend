@@ -2,9 +2,13 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { CalendarClock, CheckCircle2, Loader2, MessageSquarePlus } from "lucide-react";
+import { HistoricalFollowUpsList } from "@/components/leads/HistoricalFollowUpsList";
 import {
+  CALL_RESPONSE_OPTIONS,
+  callResponseLabel,
   createLeadFollowUp,
   getLeadFollowUps,
+  type CallResponse,
   type FollowUpCommunicationType,
   type FollowUpInterestLevel,
   type FollowUpInput,
@@ -25,6 +29,7 @@ function localDateTimeValue(value: string) {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: "Asia/Kolkata",
   });
 }
 
@@ -38,6 +43,7 @@ export function EmployeeLeadFollowUpPanel({ leadId }: { leadId: string }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const idempotencyKey = useRef<string | null>(null);
   const [communicationType, setCommunicationType] = useState<FollowUpCommunicationType>("Call");
+  const [callResponse, setCallResponse] = useState<CallResponse>("NOT_PICKED");
   const [contactedAt, setContactedAt] = useState("");
   const [customerResponse, setCustomerResponse] = useState("");
   const [discussionNotes, setDiscussionNotes] = useState("");
@@ -86,6 +92,7 @@ export function EmployeeLeadFollowUpPanel({ leadId }: { leadId: string }) {
 
     const input: FollowUpInput = {
       communicationType,
+      callResponse,
       contactedAt: contactDate.toISOString(),
       customerResponse,
       discussionNotes,
@@ -99,6 +106,7 @@ export function EmployeeLeadFollowUpPanel({ leadId }: { leadId: string }) {
       const saved = await createLeadFollowUp(leadId, input, key);
       idempotencyKey.current = null;
       setNotice(`Saved as follow-up attempt ${saved.attemptNumber}.`);
+      setCallResponse("NOT_PICKED");
       setCustomerResponse("");
       setDiscussionNotes("");
       setNextFollowUpAt("");
@@ -139,7 +147,14 @@ export function EmployeeLeadFollowUpPanel({ leadId }: { leadId: string }) {
           {followUps.map((followUp) => (
             <li key={followUp.id} className="rounded-xl border border-black/5 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-bold text-neutral-900">Attempt {followUp.attemptNumber} · {followUp.communicationType}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-bold text-neutral-900">Attempt {followUp.attemptNumber} · {followUp.communicationType}</p>
+                  {followUp.callResponse && (
+                    <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700">
+                      {callResponseLabel(followUp.callResponse)}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-neutral-400">{formatDateTime(followUp.contactedAt)}</p>
               </div>
               <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-700">{followUp.discussionNotes}</p>
@@ -154,6 +169,8 @@ export function EmployeeLeadFollowUpPanel({ leadId }: { leadId: string }) {
           ))}
         </ol>
       )}
+
+      {!loading && <HistoricalFollowUpsList items={meta?.historicalFollowUps} />}
 
       {!loading && !isClosed && !needsReview && (
         <form onSubmit={submit} className="space-y-4 border-t border-black/5 pt-5">
@@ -171,6 +188,12 @@ export function EmployeeLeadFollowUpPanel({ leadId }: { leadId: string }) {
               </select>
             </label>
             <label className="text-xs font-semibold text-neutral-600">
+              Call response
+              <select required value={callResponse} onChange={(event) => setCallResponse(event.target.value as CallResponse)} className="mt-1.5 w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm font-normal text-neutral-800">
+                {CALL_RESPONSE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-semibold text-neutral-600 sm:col-span-2">
               Contact date and time
               <input required type="datetime-local" value={contactedAt} onChange={(event) => setContactedAt(event.target.value)} className="mt-1.5 w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm font-normal text-neutral-800" />
             </label>

@@ -38,7 +38,6 @@ export function DirectoryProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     Promise.all([getEmployees(), getClients(), getServices()])
       .then(([e, c, s]) => {
         if (cancelled) return;
@@ -62,7 +61,10 @@ export function DirectoryProvider({ children }: { children: React.ReactNode }) {
       loading,
       employeeById: (id) => employees.find((e) => e.id === id),
       clientById: (id) => clients.find((c) => c.id === id),
-      refresh: () => setVersion((v) => v + 1),
+      refresh: () => {
+        setLoading(true);
+        setVersion((v) => v + 1);
+      },
     }),
     [employees, clients, services, loading]
   );

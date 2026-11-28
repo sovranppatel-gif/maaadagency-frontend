@@ -36,20 +36,20 @@ export default function EmployeeLoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-4 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-[#0e0f11] px-4 py-12 text-[#eceae4]">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
           <Image src="/images/logo.png" alt="Maa Ad Agency" width={180} height={80} className="h-14 w-auto" priority />
-          <h1 className="mt-6 text-lg font-bold text-white">Employee Sign In</h1>
-          <p className="mt-1 text-sm text-neutral-400">Use the login email and password set through your private invitation link.</p>
+          <h1 className="mt-6 text-lg font-bold text-[#ffffff]">Employee Sign In</h1>
+          <p className="mt-1 text-sm text-[#8b8d93]">Use the login email and password set through your private invitation link.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 shadow-2xl">
+        <form onSubmit={handleSubmit} className="rounded-2xl border border-[#26282d] bg-[#131417] p-6 shadow-2xl">
           {error && <div role="alert" className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-200">{error}</div>}
           <div className="mb-4">
-            <label htmlFor="employee-email" className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-neutral-400">Email address</label>
+            <label htmlFor="employee-email" className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#8b8d93]">Email address</label>
             <div className="relative">
-              <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+              <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b8d93]" />
               <input
                 id="employee-email"
                 type="email"
@@ -57,15 +57,15 @@ export default function EmployeeLoginPage() {
                 autoComplete="username"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-10 pr-3 text-sm text-white outline-none placeholder:text-neutral-500 focus:border-red-500"
+                className="w-full rounded-xl border border-[#26282d] bg-[#1a1c20] py-2.5 pl-10 pr-3 text-sm text-[#ffffff] outline-none placeholder:text-[#5d6066] focus:border-accent"
                 placeholder="name@example.com"
               />
             </div>
           </div>
           <div className="mb-5">
-            <label htmlFor="employee-password" className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-neutral-400">Password</label>
+            <label htmlFor="employee-password" className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#8b8d93]">Password</label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b8d93]" />
               <input
                 id="employee-password"
                 type={showPassword ? "text" : "password"}
@@ -73,20 +73,20 @@ export default function EmployeeLoginPage() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-10 pr-10 text-sm text-white outline-none placeholder:text-neutral-500 focus:border-red-500"
+                className="w-full rounded-xl border border-[#26282d] bg-[#1a1c20] py-2.5 pl-10 pr-10 text-sm text-[#ffffff] outline-none placeholder:text-[#5d6066] focus:border-accent"
                 placeholder="Your password"
               />
-              <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300">
+              <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8b8d93] hover:text-[#ffffff]">
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
-          <button type="submit" disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-700 py-3 text-sm font-bold text-white hover:bg-red-600 disabled:opacity-60">
+          <button type="submit" disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#c5161d] py-3 text-sm font-bold text-[#ffffff] hover:bg-[#9c1116] disabled:opacity-60">
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             Sign In
           </button>
           <div className="mt-4 text-center">
-            <Link href="/employee/forgot-password" className="text-sm font-semibold text-neutral-300 underline underline-offset-4 hover:text-white">Forgot password?</Link>
+            <Link href="/employee/forgot-password" className="text-sm font-semibold text-[#c6c5c0] underline underline-offset-4 hover:text-[#ffffff]">Forgot password?</Link>
           </div>
         </form>
       </div>

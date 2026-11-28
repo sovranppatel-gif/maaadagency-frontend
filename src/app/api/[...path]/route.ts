@@ -37,10 +37,15 @@ async function proxy(request: Request, context: RouteContext) {
 
   const responseHeaders = new Headers();
   response.headers.forEach((value, key) => {
-    if (key !== "content-encoding" && key !== "transfer-encoding") {
+    const lower = key.toLowerCase();
+    if (lower !== "content-encoding" && lower !== "transfer-encoding" && lower !== "content-length" && lower !== "set-cookie") {
       responseHeaders.set(key, value);
     }
   });
+  const setCookies = response.headers.getSetCookie?.() ?? [];
+  for (const cookie of setCookies) {
+    responseHeaders.append("set-cookie", cookie);
+  }
 
   return new Response(response.body, {
     status: response.status,

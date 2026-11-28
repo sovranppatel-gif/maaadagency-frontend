@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Clock3, Loader2 } from "lucide-react";
 import { EmployeePagination } from "@/components/employee/EmployeePagination";
-import { getFollowUpsPage, type FollowUpBucket, type LeadFollowUp } from "@/lib/api/followUps";
+import { CALL_RESPONSE_OPTIONS, callResponseLabel, getFollowUpsPage, type CallResponse, type FollowUpBucket, type LeadFollowUp } from "@/lib/api/followUps";
 import { formatDateTime } from "@/lib/format";
 
 const pageSize = 20;
@@ -36,6 +36,9 @@ function FollowUpCard({ followUp, currentTime }: { followUp: LeadFollowUp; curre
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-neutral-500">
         <span className="font-semibold text-neutral-700">Attempt {followUp.attemptNumber}</span>
         <span>{followUp.communicationType}</span>
+        {followUp.callResponse && (
+          <span className="rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-blue-700">{callResponseLabel(followUp.callResponse)}</span>
+        )}
         {followUp.nextFollowUpAt && <span className="font-semibold text-neutral-700">Due {formatDateTime(followUp.nextFollowUpAt)}</span>}
       </div>
       {followUp.discussionNotes && <p className="mt-3 line-clamp-2 text-sm text-neutral-600">{followUp.discussionNotes}</p>}
@@ -47,6 +50,7 @@ function FollowUpCard({ followUp, currentTime }: { followUp: LeadFollowUp; curre
 export default function EmployeeFollowUpsPage() {
   const [followUps, setFollowUps] = useState<LeadFollowUp[]>([]);
   const [bucket, setBucket] = useState<FollowUpBucket>("All");
+  const [callResponse, setCallResponse] = useState<CallResponse | "All">("All");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -62,7 +66,7 @@ export default function EmployeeFollowUpsPage() {
 
   useEffect(() => {
     let active = true;
-    getFollowUpsPage({ page, limit: pageSize, bucket })
+    getFollowUpsPage({ page, limit: pageSize, bucket, callResponse })
       .then(({ followUps: result, meta }) => {
         if (!active) return;
         setFollowUps(result);
@@ -78,7 +82,7 @@ export default function EmployeeFollowUpsPage() {
     return () => {
       active = false;
     };
-  }, [page, bucket]);
+  }, [page, bucket, callResponse]);
 
   return (
     <div className="space-y-5">
@@ -91,12 +95,27 @@ export default function EmployeeFollowUpsPage() {
         Due notifications are created when this list loads while a follow-up is due. There is no server-side background reminder scheduler.
       </p>
 
-      <section className="flex flex-wrap gap-2" aria-label="Follow-up schedule filters">
+      <section className="flex flex-wrap items-center gap-2" aria-label="Follow-up schedule filters">
         {buckets.map(({ value, label }) => (
           <button key={value} type="button" onClick={() => { setBucket(value); setPage(1); setLoading(true); }} aria-pressed={bucket === value} className={`rounded-xl px-3.5 py-2 text-xs font-bold ${bucket === value ? "bg-neutral-950 text-white" : "border border-black/10 bg-white text-neutral-600 hover:bg-neutral-50"}`}>
             {label}
           </button>
         ))}
+        <select
+          value={callResponse}
+          onChange={(event) => {
+            setCallResponse(event.target.value as CallResponse | "All");
+            setPage(1);
+            setLoading(true);
+          }}
+          aria-label="Filter scheduled follow-ups by call response"
+          className="ml-auto rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-neutral-700"
+        >
+          <option value="All">All call responses</option>
+          {CALL_RESPONSE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
       </section>
 
       {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}

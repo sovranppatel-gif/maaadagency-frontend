@@ -95,6 +95,8 @@ html[data-theme] {
   --color-red-300: var(--danger);
   --color-red-500: var(--danger);
   --color-red-600: var(--danger);
+  --color-red-700: var(--danger);
+  --color-red-800: var(--danger);
 
   /* Sharp shapes: 4px controls, 6px cards, nothing larger. */
   --radius-md: 4px;
@@ -123,22 +125,28 @@ html[data-theme="dark"] {
   --color-emerald-500: var(--success);
   --color-emerald-600: var(--success);
   --color-emerald-700: var(--success);
+  --color-emerald-800: var(--success);
   --color-amber-50: var(--warning-soft);
   --color-amber-100: var(--warning-soft);
   --color-amber-200: color-mix(in srgb, var(--warning) 30%, transparent);
   --color-amber-600: var(--warning);
   --color-amber-700: var(--warning);
   --color-amber-800: var(--warning);
+  --color-amber-900: var(--warning);
+  --color-amber-950: var(--warning);
   --color-orange-50: color-mix(in srgb, #ff9a5c 14%, transparent);
   --color-orange-100: color-mix(in srgb, #ff9a5c 20%, transparent);
   --color-orange-200: color-mix(in srgb, #ff9a5c 30%, transparent);
   --color-orange-500: #ff9a5c;
   --color-orange-600: #ff9a5c;
   --color-orange-700: #ff9a5c;
+  --color-orange-800: #ff9a5c;
   --color-blue-50: var(--info-soft);
+  --color-blue-100: var(--info-soft);
   --color-blue-500: var(--info);
   --color-blue-600: var(--info);
   --color-blue-700: var(--info);
+  --color-blue-800: var(--info);
   --color-violet-50: color-mix(in srgb, #b69cff 14%, transparent);
   --color-violet-600: #b69cff;
   --color-violet-700: #b69cff;

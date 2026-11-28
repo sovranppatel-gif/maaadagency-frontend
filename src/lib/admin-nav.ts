@@ -3,6 +3,7 @@ import {
   Inbox,
   ClipboardList,
   CalendarClock,
+  MapPin,
   MessageCircle,
   Users,
   Building2,
@@ -12,6 +13,7 @@ import {
   Bell,
   BarChart3,
   Settings,
+  FileSpreadsheet,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "./types";
@@ -35,9 +37,18 @@ export const adminNavItems: AdminNavItem[] = [
   { label: "Dashboard", href: "/master-admin", icon: LayoutDashboard, group: "Overview", keywords: "home overview kpi" },
   { label: "Analytics", href: "/master-admin/analytics", icon: BarChart3, group: "Overview", roles: ["MASTER_ADMIN", "ADMIN"], keywords: "reports charts stats" },
   { label: "Leads", href: "/master-admin/leads", icon: Inbox, group: "Pipeline", keywords: "enquiries requirements" },
+  {
+    label: "Excel Import / Export",
+    href: "/master-admin/leads/import-export",
+    icon: FileSpreadsheet,
+    group: "Pipeline",
+    roles: ["MASTER_ADMIN", "ADMIN"],
+    keywords: "excel xlsx csv import export migration bulk",
+  },
   { label: "WhatsApp Inbox", href: "/master-admin/whatsapp", icon: MessageCircle, group: "Pipeline", keywords: "chat messages bot faq" },
   { label: "Work Management", href: "/master-admin/work", icon: ClipboardList, group: "Pipeline", keywords: "tasks assignments" },
   { label: "Follow-ups", href: "/master-admin/follow-ups", icon: CalendarClock, group: "Pipeline", keywords: "sales reminders contact reports" },
+  { label: "Customer Visits", href: "/master-admin/visits", icon: MapPin, group: "Pipeline", keywords: "site meetings schedule calendar visits" },
   { label: "Quotations", href: "/master-admin/quotations", icon: FileText, group: "Pipeline", keywords: "quotes pricing approval pdf" },
   { label: "Clients", href: "/master-admin/clients", icon: Building2, group: "Directory", keywords: "customers companies" },
   { label: "Projects", href: "/master-admin/projects", icon: FolderKanban, group: "Directory" },
@@ -56,11 +67,19 @@ export function navItemsForRole(role?: Role): AdminNavItem[] {
 }
 
 export function isNavActive(item: AdminNavItem, pathname: string): boolean {
-  return item.href === "/master-admin" ? pathname === item.href : pathname.startsWith(item.href);
+  if (item.href === "/master-admin") return pathname === item.href;
+  if (item.href === "/master-admin/leads") {
+    return (
+      pathname === "/master-admin/leads" ||
+      (pathname.startsWith("/master-admin/leads/") && !pathname.startsWith("/master-admin/leads/import-export"))
+    );
+  }
+  return pathname.startsWith(item.href);
 }
 
 export function getPageTitle(pathname: string): string {
   if (pathname === "/master-admin") return "Dashboard";
+  if (pathname === "/master-admin/leads/import-export") return "Excel Import / Export";
   if (pathname.includes("/leads/")) return "Lead Details";
   if (pathname.includes("/work/")) return "Work Details";
   if (pathname.includes("/employees/")) return "Employee Profile";
